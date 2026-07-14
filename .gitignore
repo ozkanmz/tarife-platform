@@ -1,0 +1,34 @@
+# Tarife-PTF-YEKDEM — Python kaynak kodu reposu .gitignore
+# Bu dosyayı ".gitignore" adıyla G:\Drive'ım\Tarife-PTF-YEKDEM\ köküne koyun
+# (kod reposu — panelin yayınlandığı ayrı "tarife-platform" reposu değil).
+
+# --- Kimlik bilgileri ve oturum önbellekleri — ASLA push edilmemeli ---
+.env
+.eptr2-tgt
+
+# --- Python kalıntıları ---
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# --- Üretilen/ham veri — hacimli, tekrar üretilebilir, repoda gereksiz ---
+# NOT: İsterseniz "Tarife Arşiv", "PTF Arşiv" gibi ham arşiv klasörlerini
+# BİLEREK dahil edebilirsiniz (kaybolursa yeniden indirmek saatler alabilir,
+# EPDK web sitesinden geçmiş dönemleri bulmak zaman zaman zorlaşıyor). Bu
+# yüzden aşağıda SADECE üretilen (ham olmayan, JSON'dan/Excel'den tekrar
+# üretilebilen) dosyalar hariç tutuluyor:
+Çıktılar/*.json
+Çıktılar/*.html
+Çıktılar/Tarife Analiz.xlsx
+Çıktılar/YEKDEM Analiz.xlsx
+Çıktılar/Loglar/
+
+# --- Chart.js offline gömme dosyaları (isteğe bağlı, büyük, CDN'den taze indirilebilir) ---
+vendor/
+
+# --- Editör/OS kalıntıları ---
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
