@@ -79,7 +79,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
       <input type="number" id="inpTuketim" value="0" readonly style="opacity:.75;cursor:not-allowed;">
     </div>
     <div>
-      <label>İlk Okuma Tarihi <span style="color:var(--mut);font-weight:400;">(isteğe bağlı — kademe ve tarife değişimi tespiti için önemlidir, boş bırakılırsa güncel tarife + 30 günlük varsayım kullanılır)</span></label>
+      <label>İlk Okuma Tarihi <span style="color:var(--mut);font-weight:400;">(kademeli tarife gruplarında ZORUNLU — diğerlerinde isteğe bağlı, boş bırakılırsa en güncel tarife kullanılır)</span></label>
       <input type="date" id="inpIlkOkuma" onchange="gunSayisiGuncelle()">
     </div>
     <div>
@@ -207,6 +207,20 @@ function taban2Bul(abone){
 
 // Seçili taban2 ("OG - Sanayi") için hangi Terim(ler)in (TT/ÇT) veride
 // mevcut olduğunu bulur. AG'de tipik olarak yalnızca TT vardır.
+// Seçili taban2'nin (herhangi bir terimde) kademeli (kWh/gün eşikli) bir
+// varyantı var mı — bu durumda okuma tarihleri ZORUNLU (kademe, gerçek
+// günlük ortalama tüketime göre belirleniyor, tarihsiz güvenilir tahmin
+// edilemez). Veriden dinamik tespit ediliyor.
+function kademeliMi(taban2){
+  var ilkTire = taban2.indexOf(" - ");
+  if(ilkTire === -1) return false;
+  var gerilim = taban2.slice(0, ilkTire), sektorTaban = taban2.slice(ilkTire+3);
+  return tarifeData.some(d => {
+    var p = aboneParcala(d.abone);
+    return p.gerilim===gerilim && p.sektorTaban===sektorTaban && p.esik !== null;
+  });
+}
+
 function terimleriBul(taban2){
   var ilkTire = taban2.indexOf(" - ");
   if(ilkTire === -1) return {gerilim:null, sektorTaban:taban2, terimler:[]}; // özel durum, terim ayrımı yok
@@ -551,22 +565,29 @@ function hesapla(){
       return;
     }
   } else {
-    // YENİ (26.07.2026, kullanıcı talebi): Okuma tarihi ARTIK ZORUNLU
-    // DEĞİL — tarihten bağımsız, yalnızca tüketim miktarına dayalı bir
-    // "güncel tarifeyle ne öderdim" simülasyonu da yapılabilsin diye.
-    // Tarih girilmezse: (1) kademe belirlemede standart 30 günlük bir
-    // dönem varsayılır (AG Mesken/Ticarethane için EPDK'nın "aylık"
-    // referans mantığıyla tutarlı), (2) tarife dönemi bölüştürmesi
-    // yapılamaz (bölüştürecek bir tarih aralığı yok) — en GÜNCEL (en
-    // son) tarife dönemi tek başına kullanılır.
-    gunSayisi = 30;
-    gunlukOrtalama = tuketim / 30;
+    // GÜNCELLEME (26.07.2026, kullanıcı talebi): "30 gün" gibi rastgele
+    // bir varsayım KULLANILMIYOR artık — kullanıcı haklı olarak fatura
+    // döneminin 30/31 günden çok daha uzun (örn. atlanmış bir dönem)
+    // olabileceğini belirtti. Tarih girilmezse:
+    // (1) Seçili grup KADEMELİ ise (AG Mesken/Ticarethane gibi — kademe,
+    //     GÜNLÜK ORTALAMA tüketime bağlı olduğu için gerçek gün sayısı
+    //     olmadan doğru kademe belirlenemez) — hesaplama YAPILMAZ, tarih
+    //     girilmesi istenir.
+    // (2) Kademesiz gruplarda (Sanayi, OG vb.) gün sayısının hiçbir
+    //     hesaplamaya etkisi yoktur — sorunsuz devam edilir, en güncel
+    //     tek dönem kullanılır (bölüştürecek bir tarih aralığı yok).
+    if(kademeliMi(taban2)){
+      alert("Bu abone grubunda (kademeli tarife) doğru sonuç için okuma tarihleri gereklidir — kademe, gerçek gün sayısına göre belirleniyor.");
+      return;
+    }
+    gunSayisi = null;
+    gunlukOrtalama = null;
     if(!tarihler.length){
       alert("Tarife verisi bulunamadı.");
       return;
     }
     var enSonDonem = [...tarihler].sort(function(a,b){ return donemTarih(b)-donemTarih(a); })[0];
-    donemOranlari = [{donem: enSonDonem, gun: 30, oran: 1}];
+    donemOranlari = [{donem: enSonDonem, oran: 1}];
   }
   var pPuant  = parseFloat(document.getElementById("inpPuant").value)||30;
   var pGunduz = parseFloat(document.getElementById("inpGunduz").value)||50;
@@ -626,7 +647,7 @@ function hesapla(){
 
   var notOkumaMetni = (ilkOkuma && sonOkuma)
     ? "Okuma dönemi: " + gunSayisi + " gün · Günlük ortalama tüketim: " + fmt(gunlukOrtalama,1) + " kWh"
-    : "Okuma tarihi girilmedi — tüketim " + fmt(tuketim,0) + " kWh için, 30 günlük varsayım ve en güncel tarife ile hesaplandı";
+    : "Okuma tarihi girilmedi — tüketim " + fmt(tuketim,0) + " kWh için en güncel tarife ile hesaplandı (bu grupta gün sayısının fiyata etkisi yok)";
 
   kutuTarife.innerHTML = sonuclar.map(function(s){
     var terimEtiket = s.terim === "ÇT" ? "Çift Terimli" : (s.terim === "TT" ? "Tek Terimli" : "Tarife");
