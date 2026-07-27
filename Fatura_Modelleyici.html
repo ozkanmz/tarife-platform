@@ -75,22 +75,16 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
       <select id="selAbone" onchange="aboneGuncelle()"></select>
     </div>
     <div>
-      <label>Tarife Dönemi</label>
-      <select id="selDonem"></select>
-    </div>
-    <div>
       <label>Aylık Tüketim (kWh) <span style="color:var(--mut);font-weight:400;">(T1+T2+T3'ten otomatik)</span></label>
       <input type="number" id="inpTuketim" value="0" readonly style="opacity:.75;cursor:not-allowed;">
     </div>
-    <div id="wrapOkuma" style="display:none;">
     <div>
-      <label>İlk Okuma Tarihi <span style="color:var(--mut);font-weight:400;">(kademeli tarife için)</span></label>
+      <label>İlk Okuma Tarihi <span style="color:var(--mut);font-weight:400;">(isteğe bağlı — kademe ve tarife değişimi tespiti için önemlidir, boş bırakılırsa güncel tarife + 30 günlük varsayım kullanılır)</span></label>
       <input type="date" id="inpIlkOkuma" onchange="gunSayisiGuncelle()">
     </div>
     <div>
       <label>Son Okuma Tarihi <span id="lblGunSayisi" style="color:var(--mut);font-weight:400;"></span></label>
       <input type="date" id="inpSonOkuma" onchange="gunSayisiGuncelle()">
-    </div>
     </div>
     <div id="wrapGuc" class="hidden">
       <label>Anlaşma Gücü (kW) <span style="color:var(--mut);font-weight:400;">(Çift Terimli seçenek için)</span></label>
@@ -111,6 +105,10 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
     (Tek Zamanlı/Çok Zamanlı) kombinasyonlarını hesaplayıp 4'e kadar kombinasyonu (hangileri veride
     mevcutsa) ayrı ayrı gösterir, en ucuz olanı işaretler. Toplam tüketim, T1+T2+T3 alanlarından
     otomatik hesaplanır.
+    <br><br>
+    ⚠ Okuma tarihleri arasında bir tarife değişimi (fiyat güncellemesi) varsa, araç bunu OTOMATİK
+    tespit eder ve tüketimi gün sayısı oranına göre eski/yeni tarifeler arasında böler — ayrıca bir
+    şey seçmenize gerek yoktur.
     <br><br>
     ⚠ Bu araç, EPDK'nın Son Kaynak Tedarik Tarifesi (SKTT) limitinin ALTINDA kalan tüketiciler içindir.
     Bu limitin üzerindeki tüketiciler piyasa fiyatından faturalandığı için, buradaki ulusal tarife hesabı
@@ -143,6 +141,26 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
       <div class="fark-baslik">En Ucuz Tarife Seçeneği</div>
       <div class="fark-deger" id="degerTarife"></div>
     </div>
+  </div>
+
+  <!-- ESKİ TARİFE İLE KIYASLA -->
+  <div class="kart">
+    <div class="kart-baslik">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Farklı Bir Tarife Dönemiyle Kıyasla
+    </div>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:12px;">
+      Aynı tüketimi, EN UCUZ seçeneğinizin (yukarıdaki) terim/zaman kombinasyonuyla ama FARKLI bir
+      tarife döneminin (örn. geçen yılki) fiyatlarıyla hesaplar — "eski tarifeyle ne öderdim" sorusuna cevap verir.
+    </p>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <label>Kıyaslanacak Tarife Dönemi</label>
+        <select id="selEskiDonem"></select>
+      </div>
+      <button class="btn" style="width:auto;margin-top:0;padding:10px 20px;" onclick="eskiTarifeKiyasla()">Kıyasla</button>
+    </div>
+    <div id="eskiKiyasSonuc" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -241,6 +259,13 @@ function efektifAboneBul(gerilim, terim, sektorTaban, gunlukOrtalama){
   var otuzGunOnce = new Date(bugun.getTime() - 30*86400000);
   document.getElementById("inpSonOkuma").value = bugun.toISOString().slice(0,10);
   document.getElementById("inpIlkOkuma").value = otuzGunOnce.toISOString().slice(0,10);
+  // "Eski Tarife ile Kıyasla" dropdown'ı — en güncelden en eskiye sıralı.
+  var selEski = document.getElementById("selEskiDonem");
+  [...tarihler].sort(function(a,b){ return donemTarih(b)-donemTarih(a); }).forEach(function(t){
+    var o = document.createElement("option");
+    o.value = t; o.textContent = t;
+    selEski.appendChild(o);
+  });
   gunSayisiGuncelle();
   tuketimGuncelle();
   aboneGuncelle();
@@ -262,21 +287,6 @@ function gunSayisiGuncelle(){
   lbl.textContent = gun > 0 ? "(" + gun + " gün)" : "(geçersiz aralık)";
 }
 
-// Seçili taban2'nin (herhangi bir terimde) kademeli (kWh/gün eşikli) bir
-// varyantı var mı — yalnızca bu durumda okuma tarihleri/gün sayısı anlamlı.
-// Veriden dinamik tespit ediliyor (şu an yalnızca AG Mesken/Ticarethane'de
-// çıkıyor, ama sabit kodlamak yerine veriye bakmak EPDK ileride başka bir
-// grubu kademeli yaparsa otomatik uyum sağlar).
-function kademeliMi(taban2){
-  var ilkTire = taban2.indexOf(" - ");
-  if(ilkTire === -1) return false;
-  var gerilim = taban2.slice(0, ilkTire), sektorTaban = taban2.slice(ilkTire+3);
-  return tarifeData.some(d => {
-    var p = aboneParcala(d.abone);
-    return p.gerilim===gerilim && p.sektorTaban===sektorTaban && p.esik !== null;
-  });
-}
-
 function aboneGuncelle(){
   var taban2 = document.getElementById("selAbone").value;
   var bilgi = terimleriBul(taban2);
@@ -285,19 +295,6 @@ function aboneGuncelle(){
   // baştan görünür olmalı (aksi halde hesapla() sırasında güç=0 ile
   // yanlış bir ÇT toplamı hesaplanırdı).
   document.getElementById("wrapGuc").classList.toggle("hidden", !bilgi.terimler.includes("ÇT"));
-  // Okuma tarihleri yalnızca kademeli gruplarda (AG Mesken/Ticarethane)
-  // anlamlı — diğerlerinde gün sayısının hiçbir hesaplamaya etkisi yok,
-  // gereksiz alan kalabalığı yaratmasın.
-  document.getElementById("wrapOkuma").style.display = kademeliMi(taban2) ? "contents" : "none";
-
-  // Dönemleri güncelle
-  var selD = document.getElementById("selDonem");
-  selD.innerHTML = "";
-  [...tarihler].reverse().forEach(t => {
-    var o = document.createElement("option");
-    o.value = t; o.textContent = t;
-    selD.appendChild(o);
-  });
 }
 
 function fmt(sayi, basamak){
@@ -326,84 +323,151 @@ function donemTarih(str){
   var p = str.split("."); return new Date(+p[2],+p[1]-1,+p[0]);
 }
 
+// YENİ (26.07.2026, kullanıcı talebi): İlk/Son Okuma tarihleri arasında bir
+// tarife DEĞİŞİMİ (fiyat güncellemesi) varsa, bu fonksiyon o aralığı
+// kapsayan TÜM dönemleri ve her birinin GÜN ORANINI (0-1 arası) bulur.
+// Örnek: okuma aralığı 20 gün, bunun 12 günü eski tarifede 8 günü yeni
+// tarifede geçmişse -> [{donem:eski, oran:0.6}, {donem:yeni, oran:0.4}].
+// "Tarife Dönemi" seçim kutusu bu yüzden KALDIRILDI — kullanıcı artık
+// hangi dönem(ler)in geçerli olduğunu elle seçmiyor, tarihlerden otomatik
+// çıkarılıyor.
+function donemAgirlikliListeBul(ilkOkuma, sonOkuma){
+  var ilkD = new Date(ilkOkuma), sonD = new Date(sonOkuma);
+  var toplamGun = (sonD - ilkD) / 86400000;
+  if(toplamGun <= 0 || !tarihler.length) return [];
+  var ciftler = tarihler.map(function(t){ return {str:t, tarih:donemTarih(t)}; });
+  ciftler.sort(function(a,b){ return a.tarih - b.tarih; });
+  var sonuc = [];
+  for(var i=0;i<ciftler.length;i++){
+    var baslangic = ciftler[i].tarih;
+    var bitis = (i+1<ciftler.length) ? ciftler[i+1].tarih : new Date(9999,0,1);
+    var ustSinir = sonD < bitis ? sonD : bitis;
+    var altSinir = ilkD > baslangic ? ilkD : baslangic;
+    var gunSayisi = (ustSinir - altSinir) / 86400000;
+    if(gunSayisi > 0){
+      sonuc.push({donem: ciftler[i].str, gun: gunSayisi, oran: gunSayisi/toplamGun});
+    }
+  }
+  return sonuc;
+}
+
 // Belirli bir GERÇEK abone adı + zaman dilimi (Tek/Çok Zamanlı) için tam
-// fatura hesaplar (vergiler dahil). O zaman dilimine ait veri yoksa null
-// döner (örn. bir abone grubunda Çok Zamanlı bedeller tanımlı değilse).
+// fatura hesaplar (vergiler dahil). O zaman dilimine ait HİÇBİR dönemde
+// veri yoksa null döner.
 // NOT (26.07.2026): puant/gunduz/gece parametreleri artık YÜZDE değil,
-// kullanıcının sayacından okuduğu GERÇEK T1/T2/T3 kWh miktarları — daha
-// önce "tahmini dağılım yüzdesi" istiyorduk, artık gerçek değeri
-// istiyoruz (daha doğru, tahmin gerektirmiyor). `tuketim`, bu üçünün
-// toplamı (Tek Zamanlı kıyasında da AYNI toplam kullanılıyor).
-function faturaHesaplaTekZamanTipi(abone, donem, tuketim, guc, cokZamanliMi, puant, gunduz, gece, yesilTarifeMi){
+// kullanıcının sayacından okuduğu GERÇEK T1/T2/T3 kWh miktarları.
+// NOT (26.07.2026, GÜNCELLEME): `donem` artık TEK bir string değil,
+// `donemAgirlikliListeBul()`'un döndürdüğü [{donem, oran}, ...] listesi
+// — okuma tarihleri arasında bir tarife değişimi varsa, her bileşen
+// (enerji/güç/dağıtım/yeşil) ilgili dönemlerin fiyatına göre GÜN ORANIYLA
+// ağırlıklandırılıp toplanır.
+function y2(x){ return Math.round(x*100)/100; } // 2 ondalığa yuvarla (kuruş hassasiyeti — gerçek fatura sistemleri her satırı böyle yuvarlar)
+
+function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanliMi, puant, gunduz, gece, yesilTarifeMi){
   var ciftT = aboneParcala(abone).terim === "ÇT";
-  var enerji_tl = 0;
+  var enerji_tl = 0, guc_tl = 0, dagitim_tl = 0, yesil_tl = 0;
+  var enerjiVeriVarMi = false, yesilVeriVarMi = false;
+
+  donemOranlari.forEach(function(do_){
+    var oran = do_.oran, donem = do_.donem;
+    // Yeşil Tarife'nin EPDK verisinde AYRI bir Çok Zamanlı fiyat karşılığı
+    // yok (yalnızca tek bir "Yeşil Enerji Bedeli" alanı var) — bu yüzden
+    // Yeşil Tarife her zaman Tek Zamanlı enerji hesabını kullanır.
+    if(cokZamanliMi && !yesilTarifeMi){
+      var bP=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Puant (TL/kWh)",donem);
+      var bG=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gündüz (TL/kWh)",donem);
+      var bGe=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gece (TL/kWh)",donem);
+      if(bP!==null || bG!==null || bGe!==null){
+        enerjiVeriVarMi = true;
+        enerji_tl += (puant*oran)*(bP||0) + (gunduz*oran)*(bG||0) + (gece*oran)*(bGe||0);
+      }
+    } else {
+      var bTek = tarifeBul(abone,"Tek Zamanlı Enerji Bedeli (TL/kWh)",donem);
+      if(bTek!==null){
+        enerjiVeriVarMi = true;
+        enerji_tl += (tuketim*oran)*bTek;
+      }
+    }
+    if(ciftT){
+      var bGuc = tarifeBul(abone,"Güç Bedeli (TL/kW/Ay)",donem)||0;
+      guc_tl += guc*bGuc*oran;
+    }
+    var bDag = tarifeBul(abone,"Dağıtım Bedeli (TL/kWh)",donem)||0;
+    dagitim_tl += (tuketim*oran)*bDag;
+    if(yesilTarifeMi){
+      var yesilBed = tarifeBul(abone,"Yeşil Enerji Bedeli (TL/kWh)",donem);
+      if(yesilBed!==null){
+        yesilVeriVarMi = true;
+        yesil_tl += (tuketim*oran)*yesilBed;
+      }
+    }
+  });
+
+  if(!enerjiVeriVarMi) return null; // hicbir donemde bu zaman dilimine ait veri yok
+  if(yesilTarifeMi && !yesilVeriVarMi) return null; // hicbir donemde Yesil Enerji verisi yok
+
+  // DÜZELTME (26.07.2026, kullanıcının 2. faturasıyla kanıtlandı): Gerçek
+  // fatura sistemleri her kalemi TEK TEK 2 ondalığa yuvarlayıp öyle
+  // topluyor — tam hassasiyeti sona kadar taşımak, birkaç kuruşluk
+  // birikmiş bir sapmaya yol açıyordu. Artık her ara adım burada
+  // yuvarlanıyor; kullanıcının gerçek faturasıyla (523,77 TL / 476,15 TL
+  // matrah / 47,62 TL KDV) artık KURUŞU KURUŞUNA eşleşiyor.
+  enerji_tl = y2(enerji_tl); guc_tl = y2(guc_tl); dagitim_tl = y2(dagitim_tl); yesil_tl = y2(yesil_tl);
+
   var satirlar = [];
-  // Yeşil Tarife'nin EPDK verisinde AYRI bir Çok Zamanlı fiyat karşılığı
-  // yok (yalnızca tek bir "Yeşil Enerji Bedeli" alanı var) — bu yüzden
-  // Yeşil Tarife her zaman Tek Zamanlı enerji hesabını kullanır, cokZamanliMi
-  // parametresi bu durumda göz ardı edilir.
-  if(cokZamanliMi && !yesilTarifeMi){
-    var tP=puant, tG=gunduz, tGe=gece; // artık doğrudan kWh, yüzdeden türetme YOK
-    var bP=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Puant (TL/kWh)",donem);
-    var bG=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gündüz (TL/kWh)",donem);
-    var bGe=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gece (TL/kWh)",donem);
-    if(bP===null && bG===null && bGe===null) return null; // bu abone icin cok zamanli veri yok
-    enerji_tl = tP*(bP||0) + tG*(bG||0) + tGe*(bGe||0);
-    satirlar.push(["Enerji Puant ("+fmt(tP,0)+" kWh × "+fmt(bP||0,6)+" TL)", fmt(tP*(bP||0),2)+" TL"]);
-    satirlar.push(["Enerji Gündüz ("+fmt(tG,0)+" kWh × "+fmt(bG||0,6)+" TL)", fmt(tG*(bG||0),2)+" TL"]);
-    satirlar.push(["Enerji Gece ("+fmt(tGe,0)+" kWh × "+fmt(bGe||0,6)+" TL)", fmt(tGe*(bGe||0),2)+" TL"]);
-  } else {
-    var bTek = tarifeBul(abone,"Tek Zamanlı Enerji Bedeli (TL/kWh)",donem);
-    if(bTek===null) return null; // bu abone icin tek zamanli veri yok
-    enerji_tl = tuketim*bTek;
-    satirlar.push(["Aktif Enerji ("+fmt(tuketim,0)+" kWh × "+fmt(bTek,6)+" TL)", fmt(enerji_tl,2)+" TL"]);
+  var birdenFazlaDonem = donemOranlari.length > 1;
+  if(birdenFazlaDonem){
+    var donemAciklama = donemOranlari.map(function(do_){ return do_.donem+" (%"+fmt(do_.oran*100,0)+")"; }).join(", ");
+    satirlar.push(["Kapsanan tarife dönemleri", donemAciklama]);
   }
+  satirlar.push([cokZamanliMi && !yesilTarifeMi ? "Enerji (Puant+Gündüz+Gece toplamı)" : "Aktif Enerji ("+fmt(tuketim,0)+" kWh)", fmt(enerji_tl,2)+" TL"]);
+  if(ciftT) satirlar.push(["Güç Bedeli ("+fmt(guc,0)+" kW)", fmt(guc_tl,2)+" TL"]);
+  satirlar.push(["Dağıtım Bedeli ("+fmt(tuketim,0)+" kWh)", fmt(dagitim_tl,2)+" TL"]);
+  if(yesilTarifeMi) satirlar.push(["Yeşil Enerji Bedeli ("+fmt(tuketim,0)+" kWh)", fmt(yesil_tl,2)+" TL"]);
 
-  var guc_tl = 0;
-  if(ciftT){
-    var bGuc = tarifeBul(abone,"Güç Bedeli (TL/kW/Ay)",donem)||0;
-    guc_tl = guc*bGuc;
-    satirlar.push(["Güç Bedeli ("+fmt(guc,0)+" kW × "+fmt(bGuc,4)+" TL)", fmt(guc_tl,2)+" TL"]);
-  }
-
-  var bDag = tarifeBul(abone,"Dağıtım Bedeli (TL/kWh)",donem)||0;
-  var dagitim_tl = tuketim*bDag;
-  satirlar.push(["Dağıtım Bedeli ("+fmt(tuketim,0)+" kWh × "+fmt(bDag,6)+" TL)", fmt(dagitim_tl,2)+" TL"]);
-
-  // GÜNCELLEME (26.07.2026, kullanıcı talebi): Yeşil Enerji artık bir
-  // işaret kutusuyla diğer sonuçlara EKLENEN bir şey değil — Tek Zamanlı
-  // ve Çok Zamanlı ile AYNI SEVİYEDE, kendi başına ÜÇÜNCÜ bir kıyas
-  // seçeneği ("Yeşil Tarife" — Tek Zamanlı enerji bedeli + Yeşil Enerji
-  // Bedeli). Bu abone/dönem için Yeşil Enerji Bedeli verisi YOKSA bu
-  // fonksiyon null döner (tıpkı Çok Zamanlı verisi olmayan durumda
-  // olduğu gibi) — kart hiç gösterilmez, yanıltıcı "0 TL yeşil bedeli"
-  // görünmez.
-  var yesil_tl = 0;
-  if(yesilTarifeMi){
-    var yesilBed = tarifeBul(abone,"Yeşil Enerji Bedeli (TL/kWh)",donem);
-    if(yesilBed===null) return null; // bu abone icin Yesil Enerji verisi yok
-    yesil_tl = tuketim*yesilBed;
-    satirlar.push(["Yeşil Enerji Bedeli ("+fmt(tuketim,0)+" kWh × "+fmt(yesilBed,6)+" TL)", fmt(yesil_tl,2)+" TL"]);
-  }
-
-  // Vergi oranları — abone tipine göre yaygın uygulamayı yansıtır. Web
-  // araştırmasıyla doğrulandı (26.07.2026, AS7): BTV (Belediye Tüketim
-  // Vergisi/ETV, 2464 sayılı Belediye Gelirleri Kanunu) — Sanayi, Tarımsal
-  // Sulama ve Aydınlatma abone gruplarında %1; Mesken/Ticarethane'de %5.
-  // KDV — Mesken ve Tarımsal Sulama'da %10 (Temmuz 2023'te %8'den
-  // yükseltildi), diğerlerinde genel oran %20 (aynı tarihte %18'den
-  // yükseltildi). Bu oranlar birden fazla bağımsız kaynakla (vergi
-  // rehberi siteleri) tutarlı bulundu, ama resmi bir Resmi Gazete/GİB
-  // metniyle birebir doğrulanmadı — abonelik türünüze özgü kesin oran
-  // için faturanızı veya ilgili tedarik şirketinizi kontrol edin.
+  // BTV/ETV (Belediye/Elektrik Tüketim Vergisi, 2464 sayılı Kanun madde 34/
+  // 35/38) — 26.07.2026 İKİNCİ GÜNCELLEME: Gerçek PC verisiyle (sentetik
+  // test verisi DEĞİL) test edilince kritik bir şey ortaya çıktı — önceki
+  // turda "ampirik referans fiyat" diye elle sabitlediğim 0,494 TL/kWh,
+  // aslında TESADÜF DEĞİLMİŞ: EPDK'nın kendi "Tek Zamanlı Enerji Bedeli"
+  // tarife alanı (gerçek epdk_veri.json'da) ZATEN bu civarda bir değer
+  // taşıyor (174 kWh × 0,494 ≈ 85,93 TL — ekran görüntüsündeki "Aktif
+  // Enerji" satırıyla birebir eşleşti). Yani BTV'nin matrahı, SKTT satış
+  // fiyatı değil, EPDK'nın YAYINLADIĞI "Tek Zamanlı Enerji Bedeli"
+  // rakamının KENDİSİ — ki bu zaten `enerji_tl` olarak hesaplanıyor!
+  // Önceki turda sentetik test verimde "Tek Zamanlı Enerji Bedeli"ni
+  // SKTT fiyatıyla (2,9 TL/kWh) doldurduğum için bu örtüşmeyi göremedim,
+  // ayrı bir sabite ihtiyaç varmış gibi göründü — YANLIŞ bir sonuçtu.
+  // Artık ayrı bir sabit YOK, doğrudan gerçek enerji_tl kullanılıyor —
+  // bu hem daha doğru hem tamamen veri-kaynaklı (elle sabit sayı yok).
   var btv_oran = (abone.includes("Sanayi")||abone.includes("Tarımsal")||abone.includes("Aydınlatma")) ? 0.01 : 0.05;
+  // NOT: BTV/ETV YALNIZCA aktif enerji (tüketim) bedeline uygulanır —
+  // dağıtım, güç, güç aşım, reaktif bedellerine KESİNLİKLE uygulanmaz
+  // (kullanıcı doğruladı, kanun metni "matrah = yalnızca aktif enerji
+  // satış bedeli" diyerek bunu teyit ediyor). Yeşil Enerji Bedeli'nin BTV
+  // matrahına girip girmediği KULLANICI DA EMİN DEĞİL — şu anki varsayım:
+  // girmiyor (btv_tl, yesil_tl'den bağımsız).
+  var btv_tl = y2(enerji_tl * btv_oran);
   var kdv_oran = (abone.includes("Mesken")||abone.includes("Tarım")) ? 0.10 : 0.20;
-  var btv_tl = enerji_tl * btv_oran;
-  var matrah = enerji_tl + guc_tl + dagitim_tl + yesil_tl + btv_tl;
-  var kdv_tl = matrah * kdv_oran;
-  var toplam_tl = matrah + kdv_tl;
-  satirlar.push(["BTV (%"+(btv_oran*100)+" × Enerji)", fmt(btv_tl,2)+" TL"]);
+  var matrah = y2(enerji_tl + guc_tl + dagitim_tl + yesil_tl + btv_tl);
+  var kdv_tl = y2(matrah * kdv_oran);
+  var toplam_vergili = y2(matrah + kdv_tl);
+  satirlar.push(["BTV/ETV (%"+(btv_oran*100)+" × Aktif Enerji)", fmt(btv_tl,2)+" TL"]);
+  satirlar.push(["KDV Matrahı", fmt(matrah,2)+" TL"]);
   satirlar.push(["KDV (%"+(kdv_oran*100)+")", fmt(kdv_tl,2)+" TL"]);
+
+  // DÜZELTME (26.07.2026, kullanıcının 2. faturasıyla kanıtlandı): Gerçek
+  // MEPAŞ faturaları, vergiler dahil toplamı EN YAKIN TAM LİRAYA
+  // yuvarlayıp, farkı "Fatura Yuvarlama" adında ayrı bir kalemle
+  // gösteriyor (kullanıcının 1. faturasında -0,48 TL, 2. faturasında
+  // +0,23 TL — ikisi de "en yakın tam sayıya" yuvarlama). Bu adım
+  // olmadan toplam birkaç kuruş sapıyordu.
+  var toplam_tl = Math.round(toplam_vergili);
+  var yuvarlama_tl = y2(toplam_tl - toplam_vergili);
+  if(yuvarlama_tl !== 0){
+    satirlar.push(["Vergiler Dahil Toplam", fmt(toplam_vergili,2)+" TL"]);
+    satirlar.push(["Fatura Yuvarlama", (yuvarlama_tl>0?"+":"")+fmt(yuvarlama_tl,2)+" TL"]);
+  }
 
   return {abone:abone, ciftT:ciftT, toplam_tl:toplam_tl, satirlar:satirlar,
     zamanTipi: yesilTarifeMi ? "Yeşil Tarife" : (cokZamanliMi ? "Çok Zamanlı" : "Tek Zamanlı")};
@@ -411,22 +475,98 @@ function faturaHesaplaTekZamanTipi(abone, donem, tuketim, guc, cokZamanliMi, pua
 
 // Tek Zamanlı VE Çok Zamanlı'yı hesaplayıp UCUZ OLANI döner (biri için
 // veri yoksa diğerini döner; ikisi de yoksa null).
+// YENİ (26.07.2026, kullanıcı talebi): "Eski Tarife ile Kıyasla" — aynı
+// tüketimi, hesapla()'nın ANA SONUÇLARIYLA AYNI MANTIKLA (mevcut TÜM
+// terim × Tek Zamanlı/Çok Zamanlı/Yeşil Tarife kombinasyonları, hangileri
+// o eski dönemde veride mevcutsa) ama BAŞKA (elle seçilen) bir tarife
+// döneminin fiyatlarıyla hesaplar. hesapla()'dan TAMAMEN AYRI, isteğe
+// bağlı bir ikinci hesaplama — mevcut otomatik dönem-bölüştürme mantığına
+// dokunmaz.
+function eskiTarifeKiyasla(){
+  var p = window.__eskiKiyasParametreleri;
+  if(!p){ alert("Önce yukarıdan 'Faturayı Hesapla' butonuna basın."); return; }
+  var secilenDonem = document.getElementById("selEskiDonem").value;
+  var eskiDonemOranlari = [{donem: secilenDonem, oran: 1}];
+
+  var eskiSonuclar = [];
+  p.terimliAboneler.forEach(function(ta){
+    var sTek = faturaHesaplaTekZamanTipi(ta.abone, eskiDonemOranlari, p.tuketim, p.guc, false, p.pPuant, p.pGunduz, p.pGece, false);
+    if(sTek) eskiSonuclar.push({terim: ta.terim, sonuc: sTek});
+    var sCok = faturaHesaplaTekZamanTipi(ta.abone, eskiDonemOranlari, p.tuketim, p.guc, true, p.pPuant, p.pGunduz, p.pGece, false);
+    if(sCok) eskiSonuclar.push({terim: ta.terim, sonuc: sCok});
+    var sYesil = faturaHesaplaTekZamanTipi(ta.abone, eskiDonemOranlari, p.tuketim, p.guc, false, p.pPuant, p.pGunduz, p.pGece, true);
+    if(sYesil) eskiSonuclar.push({terim: ta.terim, sonuc: sYesil});
+  });
+
+  var kutu = document.getElementById("eskiKiyasSonuc");
+  if(eskiSonuclar.length === 0){
+    kutu.innerHTML = '<div style="color:var(--mut);padding:12px;text-align:center;">Seçilen dönem için veri bulunamadı.</div>';
+    return;
+  }
+
+  var eskiEnUcuz = eskiSonuclar[0];
+  eskiSonuclar.forEach(function(s){ if(s.sonuc.toplam_tl < eskiEnUcuz.sonuc.toplam_tl) eskiEnUcuz = s; });
+  var fark = p.guncelToplam - eskiEnUcuz.sonuc.toplam_tl;
+  var artis = fark > 0; // güncel > eski -> fiyat artmış
+
+  var kartlarHtml = eskiSonuclar.map(function(s){
+    var terimEtiket = s.terim === "ÇT" ? "Çift Terimli" : (s.terim === "TT" ? "Tek Terimli" : "Tarife");
+    var kazandiMi = eskiSonuclar.length > 1 && s === eskiEnUcuz;
+    var rowsHtml = s.sonuc.satirlar.map(function(r){ return `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`; }).join("")
+      + `<tr class="toplam"><td>TOPLAM</td><td>${fmt(s.sonuc.toplam_tl,2)} TL</td></tr>`;
+    return `<div class="kart" style="background:var(--sur2);">
+      <div class="kart-baslik" style="font-size:12px;">${terimEtiket} · ${s.sonuc.zamanTipi}${kazandiMi ? ' <span class="badge badge-grn">✓ Daha Ucuz</span>' : ''}</div>
+      <table class="sonuc-tablo">${rowsHtml}</table>
+    </div>`;
+  }).join("");
+
+  kutu.innerHTML = `
+    <div class="tarife-grid">${kartlarHtml}</div>
+    <div class="fark-kutu ${artis?'dezavantaj':'avantaj'}" style="margin-top:16px;">
+      <div class="fark-baslik">Güncel Tarifeye Göre Fark (en ucuz seçenekler kıyaslandı)</div>
+      <div class="fark-deger ${artis?'dezavantaj':'avantaj'}">${artis?'+':''}${fmt(fark,2)} TL</div>
+      <div class="fark-aciklama">Güncel (${fmt(p.guncelToplam,2)} TL) vs ${secilenDonem} (${fmt(eskiEnUcuz.sonuc.toplam_tl,2)} TL)${artis?' — fiyat o günden bu yana artmış':' — fiyat o günden bu yana azalmış'}</div>
+    </div>`;
+}
+
 function hesapla(){
   var taban2  = document.getElementById("selAbone").value;
-  var donem   = document.getElementById("selDonem").value;
   var tuketim = parseFloat(document.getElementById("inpTuketim").value)||0;
   var guc     = parseFloat(document.getElementById("inpGuc").value)||0;
-  var kademeGerekli = kademeliMi(taban2);
-  var gunSayisi = 0, gunlukOrtalama = 0;
-  if(kademeGerekli){
-    var ilkOkuma = document.getElementById("inpIlkOkuma").value;
-    var sonOkuma = document.getElementById("inpSonOkuma").value;
-    gunSayisi = (ilkOkuma && sonOkuma) ? Math.round((new Date(sonOkuma) - new Date(ilkOkuma)) / 86400000) : 0;
-    if(!ilkOkuma || !sonOkuma || gunSayisi <= 0){
-      alert("Lütfen geçerli bir ilk/son okuma tarihi girin (son okuma tarihi, ilk okuma tarihinden sonra olmalıdır) — bu abone grubunda kademeli tarife uygulandığı için gün sayısı gereklidir.");
+  var ilkOkuma = document.getElementById("inpIlkOkuma").value;
+  var sonOkuma = document.getElementById("inpSonOkuma").value;
+  var gunSayisi, gunlukOrtalama, donemOranlari;
+  if(ilkOkuma && sonOkuma){
+    gunSayisi = Math.round((new Date(sonOkuma) - new Date(ilkOkuma)) / 86400000);
+    if(gunSayisi <= 0){
+      alert("Son okuma tarihi, ilk okuma tarihinden sonra olmalıdır.");
       return;
     }
     gunlukOrtalama = tuketim / gunSayisi;
+    // Okuma tarihleri arasında bir tarife değişimi varsa otomatik tespit
+    // edilip gün oranına göre bölünüyor.
+    donemOranlari = donemAgirlikliListeBul(ilkOkuma, sonOkuma);
+    if(donemOranlari.length === 0){
+      alert("Seçilen okuma tarihleri için hiçbir tarife dönemi verisi bulunamadı.");
+      return;
+    }
+  } else {
+    // YENİ (26.07.2026, kullanıcı talebi): Okuma tarihi ARTIK ZORUNLU
+    // DEĞİL — tarihten bağımsız, yalnızca tüketim miktarına dayalı bir
+    // "güncel tarifeyle ne öderdim" simülasyonu da yapılabilsin diye.
+    // Tarih girilmezse: (1) kademe belirlemede standart 30 günlük bir
+    // dönem varsayılır (AG Mesken/Ticarethane için EPDK'nın "aylık"
+    // referans mantığıyla tutarlı), (2) tarife dönemi bölüştürmesi
+    // yapılamaz (bölüştürecek bir tarih aralığı yok) — en GÜNCEL (en
+    // son) tarife dönemi tek başına kullanılır.
+    gunSayisi = 30;
+    gunlukOrtalama = tuketim / 30;
+    if(!tarihler.length){
+      alert("Tarife verisi bulunamadı.");
+      return;
+    }
+    var enSonDonem = [...tarihler].sort(function(a,b){ return donemTarih(b)-donemTarih(a); })[0];
+    donemOranlari = [{donem: enSonDonem, gun: 30, oran: 1}];
   }
   var pPuant  = parseFloat(document.getElementById("inpPuant").value)||30;
   var pGunduz = parseFloat(document.getElementById("inpGunduz").value)||50;
@@ -446,12 +586,12 @@ function hesapla(){
   terimler.forEach(function(terim){
     var abone = terim ? efektifAboneBul(bilgi.gerilim, terim, bilgi.sektorTaban, gunlukOrtalama) : taban2;
     if(!abone) return;
-    var sonucTek = faturaHesaplaTekZamanTipi(abone, donem, tuketim, guc, false, pPuant, pGunduz, pGece, false);
-    if(sonucTek) sonuclar.push({terim: terim, sonuc: sonucTek});
-    var sonucCok = faturaHesaplaTekZamanTipi(abone, donem, tuketim, guc, true, pPuant, pGunduz, pGece, false);
-    if(sonucCok) sonuclar.push({terim: terim, sonuc: sonucCok});
-    var sonucYesil = faturaHesaplaTekZamanTipi(abone, donem, tuketim, guc, false, pPuant, pGunduz, pGece, true);
-    if(sonucYesil) sonuclar.push({terim: terim, sonuc: sonucYesil});
+    var sonucTek = faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, false, pPuant, pGunduz, pGece, false);
+    if(sonucTek) sonuclar.push({terim: terim, sonuc: sonucTek, abone: abone, cokZamanliMi: false, yesilTarifeMi: false});
+    var sonucCok = faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, true, pPuant, pGunduz, pGece, false);
+    if(sonucCok) sonuclar.push({terim: terim, sonuc: sonucCok, abone: abone, cokZamanliMi: true, yesilTarifeMi: false});
+    var sonucYesil = faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, false, pPuant, pGunduz, pGece, true);
+    if(sonucYesil) sonuclar.push({terim: terim, sonuc: sonucYesil, abone: abone, cokZamanliMi: false, yesilTarifeMi: true});
   });
 
   var kutuTarife = document.getElementById("tarifeKartlari");
@@ -466,9 +606,27 @@ function hesapla(){
   var enUcuz = sonuclar[0];
   sonuclar.forEach(function(s){ if(s.sonuc.toplam_tl < enUcuz.sonuc.toplam_tl) enUcuz = s; });
 
-  var notOkumaMetni = kademeGerekli
+  // "Eski Tarife ile Kıyasla" bölümünün kullanacağı parametreleri sakla —
+  // GÜNCELLEME (kullanıcı talebi): artık yalnızca en ucuz seçeneği değil,
+  // mevcut TÜM terim(ler)i (abone adları) saklıyoruz — eskiTarifeKiyasla()
+  // her biri için Tek Zamanlı/Çok Zamanlı/Yeşil Tarife'yi AYRI AYRI
+  // hesaplayıp, hesapla()'nın ana sonuçlarıyla AYNI mantıkla gösterecek.
+  var terimliAboneler = [];
+  sonuclar.forEach(function(s){
+    if(!terimliAboneler.some(function(t){ return t.abone===s.abone; })){
+      terimliAboneler.push({abone: s.abone, terim: s.terim});
+    }
+  });
+  window.__eskiKiyasParametreleri = {
+    terimliAboneler: terimliAboneler,
+    tuketim: tuketim, guc: guc, pPuant: pPuant, pGunduz: pGunduz, pGece: pGece,
+    guncelToplam: enUcuz.sonuc.toplam_tl
+  };
+  document.getElementById("eskiKiyasSonuc").innerHTML = "";
+
+  var notOkumaMetni = (ilkOkuma && sonOkuma)
     ? "Okuma dönemi: " + gunSayisi + " gün · Günlük ortalama tüketim: " + fmt(gunlukOrtalama,1) + " kWh"
-    : "Tüketim: " + fmt(tuketim,0) + " kWh";
+    : "Okuma tarihi girilmedi — tüketim " + fmt(tuketim,0) + " kWh için, 30 günlük varsayım ve en güncel tarife ile hesaplandı";
 
   kutuTarife.innerHTML = sonuclar.map(function(s){
     var terimEtiket = s.terim === "ÇT" ? "Çift Terimli" : (s.terim === "TT" ? "Tek Terimli" : "Tarife");
