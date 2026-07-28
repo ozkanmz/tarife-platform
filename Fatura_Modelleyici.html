@@ -183,7 +183,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.<br>
-  Veri kaynağı: EPDK (epdk.gov.tr) · OzkanMZ · Son güncelleme: 27.07.2026
+  Veri kaynağı: EPDK (epdk.gov.tr) · OzkanMZ · Son güncelleme: 29.07.2026
 </div>
 
 </div><!-- /max-width -->
@@ -358,8 +358,22 @@ function tarifeBul(abone, bedel, donem){
   return gecerli;
 }
 
+// DÜZELTME (K79, 29.07.2026 — kullanıcının GERÇEK PC'sinde test edilince
+// bulundu, sandbox'ta [UTC saat dilimi] hiç görünmüyordu): Bu fonksiyon
+// ÖNCEDEN `new Date(yil,ay,gun)` (YEREL saat dilimi çıpalı) kullanıyordu,
+// ama `hesapla()`'daki `ilkOkuma`/`sonOkuma` (`<input type="date">`'den
+// gelen "YYYY-MM-DD" string'ler) `new Date(isoString)` ile ayrıştırılıyor
+// — bu, ECMAScript standardına göre HER ZAMAN UTC'ye çıpalanır. İki farklı
+// çıpa noktası, saat dilimi UTC olmayan her makinede (ör. Türkiye,
+// UTC+3) `donemAgirlikliListeBul()`'un gün oranlarını birkaç SAAT
+// kaydırıyordu — MPS2026004200820 faturasında bu, 523,77 TL yerine
+// 524,23 TL çıkmasına yol açtı (İstanbul saat diliminde doğrulandı).
+// Düzeltme: `donemTarih()` de artık `Date.UTC(...)` ile UTC'ye çıpalanıyor
+// — ikisi de aynı referans noktasında, sonuç makinenin saat diliminden
+// TAMAMEN BAĞIMSIZ hale geldi (UTC VE Europe/Istanbul'da ayrı ayrı test
+// edilip 523,77 TL'de birleştiği doğrulandı).
 function donemTarih(str){
-  var p = str.split("."); return new Date(+p[2],+p[1]-1,+p[0]);
+  var p = str.split("."); return new Date(Date.UTC(+p[2],+p[1]-1,+p[0]));
 }
 
 // YENİ (26.07.2026, kullanıcı talebi): İlk/Son Okuma tarihleri arasında bir
@@ -370,8 +384,39 @@ function donemTarih(str){
 // "Tarife Dönemi" seçim kutusu bu yüzden KALDIRILDI — kullanıcı artık
 // hangi dönem(ler)in geçerli olduğunu elle seçmiyor, tarihlerden otomatik
 // çıkarılıyor.
+//
+// HUKUKİ DAYANAK + SAYISAL DOĞRULAMA (K77, 29.07.2026): Bu gün-oranlı
+// (kıst) yaklaşım tahmin/varsayım DEĞİL — EPDK'nın kendi resmi kuralı.
+// Kaynak: 31/12/2015 tarihli, 29579 sayılı (4. mükerrer) Resmî Gazete'de
+// yayımlanan 5999-3 sayılı Kurul Kararı ("Dağıtım Lisansı Sahibi Tüzel
+// Kişiler ve Görevli Tedarik Şirketlerinin Tarife Uygulamalarına İlişkin
+// Usul ve Esaslar"), madde 20/1 — fiyat değişikliği olan dönemlerde,
+// okuma tarihinin "gün ortası" kabul edildiği ve günlük tüketimin dönem
+// boyunca eşit dağıldığı varsayımıyla faturalandırma yapılacağını
+// açıkça hükme bağlıyor (EPDK'nın kendi açıklayıcı duyurusu:
+// https://www.epdk.gov.tr/Detay/Icerik/4-12567/kademeli-tarife-ve-kist-uygulamasi-hakkinda-duyuru).
+// Ayrıca gerçek bir MEPAŞ faturasıyla (24.03-23.04.2026 dönemi, tam
+// 04.04.2026 EPDK zammının ortasında) tersine mühendislikle doğrulandı:
+// faturadaki tek "Birim Fiyat" (2,712908 TL) geriye çözüldüğünde
+// ~10,5/19,5 gün eski/yeni tarife oranı çıkıyor — EPDK'nın kendi
+// duyurusundaki örnekle (16 Ara-17 Oca, 15,5/16,5 gün) birebir aynı
+// "değişim tarihi gün ortası sayılır" kuralı.
 function donemAgirlikliListeBul(ilkOkuma, sonOkuma){
-  var ilkD = new Date(ilkOkuma), sonD = new Date(sonOkuma);
+  // DÜZELTME (K77, 29.07.2026 — gerçek MPS2026004200820 faturasıyla
+  // kanıtlandı): EPDK'nın madde 20/1 hükmü yalnızca "gün-oranlı bölüştür"
+  // demiyor, İLK VE SON OKUMA tarihlerinin "gün ortasında yapıldığı"
+  // (yani öğlen, +12 saat) VARSAYILMASINI da şart koşuyor. Tarife DEĞİŞİM
+  // tarihi ise resmi/net bir gece yarısı sınırıdır, kaydırılmaz. Bu ayrım
+  // yapılmadan (düz gün farkı ile) hesaplanınca, gerçek faturayla ~2 TL
+  // (%0,4) sapma çıkıyordu (522 TL hesaplanan vs 524 TL gerçek); +12 saat
+  // düzeltmesiyle (10,5/19,5 gün oranı) SONUÇ FATURAYLA KURUŞUNA KADAR
+  // BİREBİR EŞLEŞTİ (KDV Matrahı 476,15, KDV 47,62, Toplam 524,00 — hepsi
+  // tıpatıp aynı). Kanıt zinciri: EPDK Usul ve Esaslar madde 20/1 + EPDK'nın
+  // kendi açıklayıcı duyurusundaki 15,5/16,5 örneği (bkz. üstteki yorum)
+  // + bu gerçek faturanın tersine mühendislikle doğrulanması.
+  var YARIM_GUN_MS = 12*60*60*1000;
+  var ilkD = new Date(new Date(ilkOkuma).getTime() + YARIM_GUN_MS);
+  var sonD = new Date(new Date(sonOkuma).getTime() + YARIM_GUN_MS);
   var toplamGun = (sonD - ilkD) / 86400000;
   if(toplamGun <= 0 || !tarihler.length) return [];
   var ciftler = tarihler.map(function(t){ return {str:t, tarih:donemTarih(t)}; });
@@ -495,18 +540,27 @@ function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanl
   satirlar.push(["KDV Matrahı", fmt(matrah,2)+" TL"]);
   satirlar.push(["KDV (%"+(kdv_oran*100)+")", fmt(kdv_tl,2)+" TL"]);
 
-  // DÜZELTME (26.07.2026, kullanıcının 2. faturasıyla kanıtlandı): Gerçek
-  // MEPAŞ faturaları, vergiler dahil toplamı EN YAKIN TAM LİRAYA
-  // yuvarlayıp, farkı "Fatura Yuvarlama" adında ayrı bir kalemle
-  // gösteriyor (kullanıcının 1. faturasında -0,48 TL, 2. faturasında
-  // +0,23 TL — ikisi de "en yakın tam sayıya" yuvarlama). Bu adım
-  // olmadan toplam birkaç kuruş sapıyordu.
-  var toplam_tl = Math.round(toplam_vergili);
-  var yuvarlama_tl = y2(toplam_tl - toplam_vergili);
-  if(yuvarlama_tl !== 0){
-    satirlar.push(["Vergiler Dahil Toplam", fmt(toplam_vergili,2)+" TL"]);
-    satirlar.push(["Fatura Yuvarlama", (yuvarlama_tl>0?"+":"")+fmt(yuvarlama_tl,2)+" TL"]);
-  }
+  // DEĞİŞİKLİK (K78, 29.07.2026, kullanıcı talebi — "yuvarlamayı
+  // yasaklıyorum"): ÖNCEDEN burada `toplam_vergili` en yakın TAM TL'ye
+  // yuvarlanıp farkı "Fatura Yuvarlama" adında bir satırla gösteriliyordu
+  // (26.07.2026'da 2 gerçek faturayla "doğrulanmıştı"). Ama 4 faturaya
+  // çıkarılınca gerçek desen ortaya çıktı: matrah/KDV/vergili toplam
+  // KURUŞUNA KADAR her seferinde doğru çıkıyor, ama MEPAŞ'ın SON adımdaki
+  // TAM TL'ye yuvarlama kuralı 4 örnekte 4 FARKLI davranış sergiliyor —
+  // biri en-yakına (524), biri aşağı (591→ama .50 tam sınırda YUKARI
+  // değil AŞAĞI), biri UZAK olana yukarı (754,46→755, 754'e daha yakınken),
+  // biri aşağı (736). Ne "en yakına", ne "her zaman yukarı/tavan", ne
+  // "her zaman aşağı/taban", ne "bankacı yuvarlaması" bu 4 örneğin
+  // TAMAMINI aynı anda açıklıyor — muhtemelen MEPAŞ'ın kendi sistemi
+  // burada görünenden daha yüksek hassasiyetli iç değerler kullanıyor,
+  // bizim elimizdeki 2 ondalıklı görünen rakamlardan güvenilir şekilde
+  // geri çıkarılamıyor. 4 örneğe uydurma bir if-else kural yazmak kırılgan
+  // ve dürüst olmayan bir yama olurdu — YAPILMADI. Bunun yerine: TAM TL'ye
+  // zorlama TAMAMEN KALDIRILDI, "Fatura Yuvarlama" satırı da kaldırıldı.
+  // `toplam_tl` artık `toplam_vergili`nin KENDİSİ (zaten y2() ile 2
+  // ondalığa yuvarlanmış, kanıtlı doğru) — ekranda "TOPLAM FATURA" olarak
+  // küsuratlı gösteriliyor, uydurma bir tam-sayı iddiası yok.
+  var toplam_tl = toplam_vergili;
 
   return {abone:abone, ciftT:ciftT, toplam_tl:toplam_tl, satirlar:satirlar,
     zamanTipi: yesilTarifeMi ? "Yeşil Tarife" : (cokZamanliMi ? "Çok Zamanlı" : "Tek Zamanlı")};
