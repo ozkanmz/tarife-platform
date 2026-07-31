@@ -197,7 +197,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   <span data-i18n="footerP1">Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.</span><br>
-  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 30.07.2026
+  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 31.07.2026
 </div>
 
 </div><!-- /max-width -->
@@ -644,15 +644,29 @@ function y2(x){ return Math.round(x*100)/100; } // 2 ondalığa yuvarla (kuruş 
 
 function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanliMi, puant, gunduz, gece, yesilTarifeMi){
   var ciftT = aboneParcala(abone).terim === "ÇT";
-  var enerji_tl = 0, guc_tl = 0, dagitim_tl = 0, yesil_tl = 0;
-  var enerjiVeriVarMi = false, yesilVeriVarMi = false;
+  var enerji_tl = 0, guc_tl = 0, dagitim_tl = 0;
+  var enerjiVeriVarMi = false;
 
   donemOranlari.forEach(function(do_){
     var oran = do_.oran, donem = do_.donem;
-    // Yeşil Tarife'nin EPDK verisinde AYRI bir Çok Zamanlı fiyat karşılığı
-    // yok (yalnızca tek bir "Yeşil Enerji Bedeli" alanı var) — bu yüzden
-    // Yeşil Tarife her zaman Tek Zamanlı enerji hesabını kullanır.
-    if(cokZamanliMi && !yesilTarifeMi){
+    // DÜZELTME (30.07.2026, kullanıcı onayıyla — BTV/ETV araştırması
+    // sırasında bulundu): Yeşil Enerji Bedeli, standart Tek/Çok Zamanlı
+    // Enerji Bedeli'nin YERİNE geçen bir fiyattır (üzerine eklenen bir
+    // "ek/prim" DEĞİL). ÖNCEDEN kod, Yeşil Tarife seçiliyken hem "Tek
+    // Zamanlı Enerji Bedeli" (enerji_tl) HEM "Yeşil Enerji Bedeli"
+    // (ayrı yesil_tl) hesaplayıp İKİSİNİ BİRDEN faturaya yazıyordu —
+    // aynı kWh için ÇİFT ÜCRETLENDİRME hatasıydı. Artık Yeşil Tarife'de
+    // SADECE "Yeşil Enerji Bedeli" hesaplanıyor, "Tek Zamanlı Enerji
+    // Bedeli" hiç sorgulanmıyor bile — `enerji_tl` tek, birleşik "aktif
+    // enerji" kalemi (Yeşil Tarife'de Yeşil Enerji Bedeli'ni, diğerlerinde
+    // Tek/Çok Zamanlı Enerji Bedeli'ni taşır).
+    if(yesilTarifeMi){
+      var bYesil=tarifeBul(abone,"Yeşil Enerji Bedeli (TL/kWh)",donem);
+      if(bYesil!==null){
+        enerjiVeriVarMi = true;
+        enerji_tl += (tuketim*oran)*bYesil;
+      }
+    } else if(cokZamanliMi){
       var bP=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Puant (TL/kWh)",donem);
       var bG=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gündüz (TL/kWh)",donem);
       var bGe=tarifeBul(abone,"Çok Zamanlı Enerji Bedeli Gece (TL/kWh)",donem);
@@ -673,17 +687,9 @@ function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanl
     }
     var bDag = tarifeBul(abone,"Dağıtım Bedeli (TL/kWh)",donem)||0;
     dagitim_tl += (tuketim*oran)*bDag;
-    if(yesilTarifeMi){
-      var yesilBed = tarifeBul(abone,"Yeşil Enerji Bedeli (TL/kWh)",donem);
-      if(yesilBed!==null){
-        yesilVeriVarMi = true;
-        yesil_tl += (tuketim*oran)*yesilBed;
-      }
-    }
   });
 
-  if(!enerjiVeriVarMi) return null; // hicbir donemde bu zaman dilimine ait veri yok
-  if(yesilTarifeMi && !yesilVeriVarMi) return null; // hicbir donemde Yesil Enerji verisi yok
+  if(!enerjiVeriVarMi) return null; // hicbir donemde bu zaman dilimine/tarifeye ait veri yok
 
   // DÜZELTME (26.07.2026, kullanıcının 2. faturasıyla kanıtlandı): Gerçek
   // fatura sistemleri her kalemi TEK TEK 2 ondalığa yuvarlayıp öyle
@@ -691,7 +697,7 @@ function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanl
   // birikmiş bir sapmaya yol açıyordu. Artık her ara adım burada
   // yuvarlanıyor; kullanıcının gerçek faturasıyla (523,77 TL / 476,15 TL
   // matrah / 47,62 TL KDV) artık KURUŞU KURUŞUNA eşleşiyor.
-  enerji_tl = y2(enerji_tl); guc_tl = y2(guc_tl); dagitim_tl = y2(dagitim_tl); yesil_tl = y2(yesil_tl);
+  enerji_tl = y2(enerji_tl); guc_tl = y2(guc_tl); dagitim_tl = y2(dagitim_tl);
 
   var satirlar = [];
   var birdenFazlaDonem = donemOranlari.length > 1;
@@ -699,36 +705,26 @@ function faturaHesaplaTekZamanTipi(abone, donemOranlari, tuketim, guc, cokZamanl
     var donemAciklama = donemOranlari.map(function(do_){ return do_.donem+" (%"+fmt(do_.oran*100,0)+")"; }).join(", ");
     satirlar.push([_cvr("rowKapsananDonemler"), donemAciklama]);
   }
-  satirlar.push([cokZamanliMi && !yesilTarifeMi ? _cvr("rowEnerjiKarma") : _cvr("rowAktifEnerji", fmt(tuketim,0)), fmt(enerji_tl,2)+" TL"]);
+  satirlar.push([yesilTarifeMi ? _cvr("rowYesilEnerji", fmt(tuketim,0)) : (cokZamanliMi ? _cvr("rowEnerjiKarma") : _cvr("rowAktifEnerji", fmt(tuketim,0))), fmt(enerji_tl,2)+" TL"]);
   if(ciftT) satirlar.push([_cvr("rowGucBedeli", fmt(guc,0)), fmt(guc_tl,2)+" TL"]);
   satirlar.push([_cvr("rowDagitimBedeli", fmt(tuketim,0)), fmt(dagitim_tl,2)+" TL"]);
-  if(yesilTarifeMi) satirlar.push([_cvr("rowYesilEnerji", fmt(tuketim,0)), fmt(yesil_tl,2)+" TL"]);
 
   // BTV/ETV (Belediye/Elektrik Tüketim Vergisi, 2464 sayılı Kanun madde 34/
-  // 35/38) — 26.07.2026 İKİNCİ GÜNCELLEME: Gerçek PC verisiyle (sentetik
-  // test verisi DEĞİL) test edilince kritik bir şey ortaya çıktı — önceki
-  // turda "ampirik referans fiyat" diye elle sabitlediğim 0,494 TL/kWh,
-  // aslında TESADÜF DEĞİLMİŞ: EPDK'nın kendi "Tek Zamanlı Enerji Bedeli"
-  // tarife alanı (gerçek epdk_veri.json'da) ZATEN bu civarda bir değer
-  // taşıyor (174 kWh × 0,494 ≈ 85,93 TL — ekran görüntüsündeki "Aktif
-  // Enerji" satırıyla birebir eşleşti). Yani BTV'nin matrahı, SKTT satış
-  // fiyatı değil, EPDK'nın YAYINLADIĞI "Tek Zamanlı Enerji Bedeli"
-  // rakamının KENDİSİ — ki bu zaten `enerji_tl` olarak hesaplanıyor!
-  // Önceki turda sentetik test verimde "Tek Zamanlı Enerji Bedeli"ni
-  // SKTT fiyatıyla (2,9 TL/kWh) doldurduğum için bu örtüşmeyi göremedim,
-  // ayrı bir sabite ihtiyaç varmış gibi göründü — YANLIŞ bir sonuçtu.
-  // Artık ayrı bir sabit YOK, doğrudan gerçek enerji_tl kullanılıyor —
-  // bu hem daha doğru hem tamamen veri-kaynaklı (elle sabit sayı yok).
+  // 35/38) — matrahı, iletim/dağıtım/perakende satış bedelleri HARİÇ,
+  // yalnızca aktif enerji satış bedelidir (kanun metni + birden fazla
+  // bağımsız hukuki kaynakla doğrulandı, 30.07.2026). Yeşil Tarife'de de
+  // aynı kural geçerli — Yeşil Enerji Bedeli, o abonenin aktif enerji
+  // satış bedelinin KENDİSİ olduğu için (yukarıdaki düzeltmeyle artık
+  // `enerji_tl` içinde), BTV hesaba otomatik doğru şekilde giriyor; ayrı
+  // bir istisna/ekleme gerekmedi.
   var btv_oran = (abone.includes("Sanayi")||abone.includes("Tarımsal")||abone.includes("Aydınlatma")) ? 0.01 : 0.05;
   // NOT: BTV/ETV YALNIZCA aktif enerji (tüketim) bedeline uygulanır —
   // dağıtım, güç, güç aşım, reaktif bedellerine KESİNLİKLE uygulanmaz
   // (kullanıcı doğruladı, kanun metni "matrah = yalnızca aktif enerji
-  // satış bedeli" diyerek bunu teyit ediyor). Yeşil Enerji Bedeli'nin BTV
-  // matrahına girip girmediği KULLANICI DA EMİN DEĞİL — şu anki varsayım:
-  // girmiyor (btv_tl, yesil_tl'den bağımsız).
+  // satış bedeli" diyerek bunu teyit ediyor).
   var btv_tl = y2(enerji_tl * btv_oran);
   var kdv_oran = (abone.includes("Mesken")||abone.includes("Tarım")) ? 0.10 : 0.20;
-  var matrah = y2(enerji_tl + guc_tl + dagitim_tl + yesil_tl + btv_tl);
+  var matrah = y2(enerji_tl + guc_tl + dagitim_tl + btv_tl);
   var kdv_tl = y2(matrah * kdv_oran);
   var toplam_vergili = y2(matrah + kdv_tl);
   satirlar.push([_cvr("rowBtvEtv", btv_oran*100), fmt(btv_tl,2)+" TL"]);
