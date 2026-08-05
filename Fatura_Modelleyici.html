@@ -100,31 +100,31 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   </div>
   <div class="form-grid">
     <div>
-      <label data-i18n="gerilimSektor">Gerilim / Sektör</label>
+      <label for="selAbone" data-i18n="gerilimSektor">Gerilim / Sektör</label>
       <select id="selAbone" onchange="aboneGuncelle()"></select>
     </div>
     <div>
-      <label><span data-i18n="aylikTuketim">Aylık Tüketim (kWh)</span> <span style="color:var(--mut);font-weight:400;" data-i18n="otomatikT1T2T3">(T1+T2+T3'ten otomatik)</span></label>
+      <label for="inpTuketim"><span data-i18n="aylikTuketim">Aylık Tüketim (kWh)</span> <span style="color:var(--mut);font-weight:400;" data-i18n="otomatikT1T2T3">(T1+T2+T3'ten otomatik)</span></label>
       <input type="number" id="inpTuketim" value="0" readonly style="opacity:.75;cursor:not-allowed;">
     </div>
     <div>
-      <label><span data-i18n="ilkOkumaTarihi">İlk Okuma Tarihi</span> <span style="color:var(--mut);font-weight:400;" data-i18n="ilkOkumaNotu">(kademeli tarife gruplarında ZORUNLU — diğerlerinde isteğe bağlı, boş bırakılırsa en güncel tarife kullanılır)</span></label>
+      <label for="inpIlkOkuma"><span data-i18n="ilkOkumaTarihi">İlk Okuma Tarihi</span> <span style="color:var(--mut);font-weight:400;" data-i18n="ilkOkumaNotu">(kademeli tarife gruplarında ZORUNLU — diğerlerinde isteğe bağlı, boş bırakılırsa en güncel tarife kullanılır)</span></label>
       <input type="date" id="inpIlkOkuma" onchange="gunSayisiGuncelle()">
     </div>
     <div>
-      <label><span data-i18n="sonOkumaTarihi">Son Okuma Tarihi</span> <span id="lblGunSayisi" style="color:var(--mut);font-weight:400;"></span></label>
+      <label for="inpSonOkuma"><span data-i18n="sonOkumaTarihi">Son Okuma Tarihi</span> <span id="lblGunSayisi" style="color:var(--mut);font-weight:400;"></span></label>
       <input type="date" id="inpSonOkuma" onchange="gunSayisiGuncelle()">
     </div>
     <div id="wrapGuc" class="hidden">
-      <label><span data-i18n="anlasmaGucu">Anlaşma Gücü (kW)</span> <span style="color:var(--mut);font-weight:400;" data-i18n="ciftTerimliNotu">(Çift Terimli seçenek için)</span></label>
+      <label for="inpGuc"><span data-i18n="anlasmaGucu">Anlaşma Gücü (kW)</span> <span style="color:var(--mut);font-weight:400;" data-i18n="ciftTerimliNotu">(Çift Terimli seçenek için)</span></label>
       <input type="number" id="inpGuc" value="100" min="1" data-i18n-placeholder="gucOrnekIpucu" placeholder="örn. 100">
     </div>
     <div id="wrapZaman">
       <label><span data-i18n="t1t2t3Tuketim">T1/T2/T3 Tüketim (kWh)</span> <span style="color:var(--mut);font-weight:400;" data-i18n="t1t2t3Notu">(sayacınızdaki gerçek değerler — Çok Zamanlı seçenek için, toplam buradan hesaplanır)</span></label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px">
-        <div><label style="font-size:10px" data-i18n="t1Puant">T1 - Puant (kWh)</label><input type="number" id="inpPuant" value="3000" min="0" oninput="tuketimGuncelle()"></div>
-        <div><label style="font-size:10px" data-i18n="t2Gunduz">T2 - Gündüz (kWh)</label><input type="number" id="inpGunduz" value="5000" min="0" oninput="tuketimGuncelle()"></div>
-        <div><label style="font-size:10px" data-i18n="t3Gece">T3 - Gece (kWh)</label><input type="number" id="inpGece" value="2000" min="0" oninput="tuketimGuncelle()"></div>
+        <div><label for="inpPuant" style="font-size:10px" data-i18n="t1Puant">T1 - Puant (kWh)</label><input type="number" id="inpPuant" value="3000" min="0" oninput="tuketimGuncelle()"></div>
+        <div><label for="inpGunduz" style="font-size:10px" data-i18n="t2Gunduz">T2 - Gündüz (kWh)</label><input type="number" id="inpGunduz" value="5000" min="0" oninput="tuketimGuncelle()"></div>
+        <div><label for="inpGece" style="font-size:10px" data-i18n="t3Gece">T3 - Gece (kWh)</label><input type="number" id="inpGece" value="2000" min="0" oninput="tuketimGuncelle()"></div>
       </div>
     </div>
   </div>
@@ -184,7 +184,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
     </p>
     <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
       <div style="flex:1;min-width:180px;">
-        <label data-i18n="kiyaslanacakDonem">Kıyaslanacak Tarife Dönemi</label>
+        <label for="selEskiDonem" data-i18n="kiyaslanacakDonem">Kıyaslanacak Tarife Dönemi</label>
         <select id="selEskiDonem"></select>
       </div>
       <button class="btn" style="width:auto;margin-top:0;padding:10px 20px;" onclick="eskiTarifeKiyasla()" data-i18n="kiyasla">Kıyasla</button>
@@ -197,7 +197,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   <span data-i18n="footerP1">Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.</span><br>
-  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 02.08.2026
+  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 04.08.2026
 </div>
 
 </div><!-- /max-width -->
@@ -940,13 +940,6 @@ function hesapla(){
   document.getElementById("sonuclar").classList.remove("hidden");
   document.getElementById("sonuclar").scrollIntoView({behavior:"smooth"});
 }
-
-// Sayfa koruması
-document.addEventListener('contextmenu',e=>e.preventDefault());
-document.addEventListener('keydown',e=>{
-  if(e.key==='F12'||( e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||
-    (e.ctrlKey&&e.key.toUpperCase()==='U')) e.preventDefault();
-});
 </script>
 </body>
 </html>
