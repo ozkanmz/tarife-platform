@@ -170,6 +170,11 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
       <div class="fark-baslik" data-i18n="enUcuzTarifeSecenegi">En Ucuz Tarife Seçeneği</div>
       <div class="fark-deger" id="degerTarife"></div>
     </div>
+    <div class="fark-kutu" id="kutuSktt" style="display:none;margin-top:12px;">
+      <div class="fark-baslik" data-i18n="skttDurumBaslik">SKTT Limit Durumu (yıllıklaştırılmış projeksiyon)</div>
+      <div class="fark-deger" id="degerSktt"></div>
+      <div class="fark-aciklama" id="aciklamaSktt"></div>
+    </div>
   </div>
 
   <!-- ESKİ TARİFE İLE KIYASLA -->
@@ -197,7 +202,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   <span data-i18n="footerP1">Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.</span><br>
-  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 08.08.2026
+  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 09.08.2026
 </div>
 
 </div><!-- /max-width -->
@@ -242,6 +247,11 @@ tr: {
   kaynaklarEtiket: "Kaynaklar:",
   kaynakSktt1: "EPDK — SKTT Sıkça Sorulan Sorular", kaynakSktt2: "EPDK — Son Kaynak Tedarik Tarifesi", kaynakTeblig: "mevzuat.gov.tr — Tebliğ metni (30307 sayılı R.G.)",
   ozet: "Özet", enUcuzTarifeSecenegi: "En Ucuz Tarife Seçeneği",
+  skttDurumBaslik: "SKTT Limit Durumu (yıllıklaştırılmış projeksiyon)",
+  skttLimitAltinda: "Limit altında",
+  skttAsimRiski: "⚠ AŞIM RİSKİ",
+  skttAciklama: function(kategori, projeksiyon, limit){ return "Bu tüketim hızıyla devam ederseniz, yıllık tüketiminiz yaklaşık " + projeksiyon + " kWh olur (" + kategori + " limiti: " + limit + " kWh). Bu bir TAHMİNDİR, sadece girdiğiniz dönemin günlük ortalamasından yıla uzatılmıştır — gerçek yıllık tüketiminiz mevsimsel farklarla değişebilir."; },
+  skttAsimAciklama: function(kategori, projeksiyon, limit){ return "Bu tüketim hızıyla devam ederseniz, yıllık tüketiminiz yaklaşık " + projeksiyon + " kWh olur — " + kategori + " için SKTT limitini (" + limit + " kWh) AŞABİLİR. Aşım durumunda SKTT kapsamından çıkıp serbest piyasaya/İkili Anlaşma'ya geçme gerekliliği doğabilir. Bu bir TAHMİNDİR, kesin sonuç için gerçek yıl sonu tüketiminizi izleyin."; },
   farkliDonemleKiyasla: "Farklı Bir Tarife Dönemiyle Kıyasla",
   kiyaslaAciklama: "Aynı tüketimi, EN UCUZ seçeneğinizin (yukarıdaki) terim/zaman kombinasyonuyla ama FARKLI bir tarife döneminin (örn. geçen yılki) fiyatlarıyla hesaplar — \"eski tarifeyle ne öderdim\" sorusuna cevap verir.",
   kiyaslanacakDonem: "Kıyaslanacak Tarife Dönemi", kiyasla: "Kıyasla",
@@ -299,6 +309,11 @@ en: {
   kaynaklarEtiket: "Sources:",
   kaynakSktt1: "EPDK — SKTT Frequently Asked Questions", kaynakSktt2: "EPDK — End Source Supply Tariff", kaynakTeblig: "mevzuat.gov.tr — Communiqué text (Official Gazette No. 30307)",
   ozet: "Summary", enUcuzTarifeSecenegi: "Cheapest Tariff Option",
+  skttDurumBaslik: "SKTT Limit Status (annualized projection)",
+  skttLimitAltinda: "Below limit",
+  skttAsimRiski: "⚠ RISK OF EXCEEDING LIMIT",
+  skttAciklama: function(kategori, projeksiyon, limit){ return "At this rate of consumption, your annual consumption would be approximately " + projeksiyon + " kWh (" + kategori + " limit: " + limit + " kWh). This is an ESTIMATE ONLY, projected from your entered period's daily average — actual annual consumption may vary with seasonal differences."; },
+  skttAsimAciklama: function(kategori, projeksiyon, limit){ return "At this rate of consumption, your annual consumption would be approximately " + projeksiyon + " kWh — this MAY EXCEED the SKTT limit (" + limit + " kWh) for " + kategori + ". Exceeding it may require moving to the free market/a bilateral agreement. This is an ESTIMATE ONLY — monitor your actual year-end consumption for a definitive answer."; },
   farkliDonemleKiyasla: "Compare With a Different Tariff Period",
   kiyaslaAciklama: "Calculates the same consumption using your CHEAPEST option's (above) term/time combination but with the prices of a DIFFERENT tariff period (e.g. last year's) — answers the question \"what would I have paid under the old tariff\".",
   kiyaslanacakDonem: "Tariff Period to Compare", kiyasla: "Compare",
@@ -416,6 +431,61 @@ function aboneParcala(abone){
   return {gerilim:m[1], terim:m[2], sektorTaban:k.taban, esik:k.esik, yon:k.yon};
 }
 
+// SKTT Limit Sayacı (08.08.2026, Faz 1 — yol haritası madde 4): EPDK'nın
+// SKTT Sıkça Sorulan Sorular sayfası + mevzuat.gov.tr'deki 30307 sayılı
+// Tebliğ'de doğrulanmış, 01.01.2026 itibarıyla yürürlükteki YILLIK
+// limitler (bkz. yukarıdaki uyari3Baslik metni — aynı sayılar, tek
+// kaynaktan). Yalnızca bu 4 kategori için tanımlı; diğer sektorTaban
+// değerleri (Aydınlatma, Üretici vb.) için SKTT limit kavramı burada
+// ele alınmıyor, sayaç o durumlarda sessizce gösterilmez (tahmin
+// yürütülmez).
+//
+// DÜZELTME (08.08.2026, ekip arkadaşı G'nin gerçek EPDK verisiyle
+// bulduğu, Claude'un bağımsız olarak epdk_veri.json'a karşı DOĞRULADIĞI
+// kritik hata): Ticarethane'nin GERÇEK sektorTaban değeri, kısa
+// "Ticarethane" DEĞİL — EPDK'nın kendi Excel'inde birebir
+// "Kamu ve Özel Hizmetler Sektörü (Ticarethane)" olarak geçiyor. Anahtar
+// kısa haliyle yazılmıştı, bu yüzden Ticarethane aboneleri için sayaç
+// HİÇBİR ZAMAN eşleşmiyor, kutu sessizce hep gizli kalıyordu (silent
+// failure — hata fırlatmadığı için fark edilmesi zordu). Gerçek
+// epdk_veri.json'daki TÜM sektorTaban değerleri tek tek çıkarılıp
+// doğrulandı: Mesken/Sanayi/Tarımsal Sulama zaten doğruydu, yalnızca
+// Ticarethane yanlıştı.
+var SKTT_LIMITLERI_YILLIK = {
+  "Mesken": 4000,
+  "Sanayi": 15000,
+  "Kamu ve Özel Hizmetler Sektörü (Ticarethane)": 15000,
+  "Tarımsal Sulama": 150000000,
+};
+
+// Uyarı metninde EPDK'nın uzun resmi adı yerine, projenin başka
+// yerlerde (bkz. uyari3Baslik listesi) zaten kullandığı kısa "Ticarethane"
+// gösterilsin diye — VERİ ANAHTARI (yukarıdaki) hiç değişmiyor, sadece
+// EKRANA ne yazılacağı değişiyor (aynı desen: ayGoster/bedelGoster/
+// aboneGoster ile aynı ilke, panel_logic.js'de de kullanılıyor).
+var SKTT_KATEGORI_GORUNEN_AD = {
+  "Kamu ve Özel Hizmetler Sektörü (Ticarethane)": "Ticarethane",
+};
+
+// Yalnızca gerçek okuma tarihleri girilmişse (gunSayisi biliniyorsa)
+// anlamlı bir yıllıklaştırma yapılabilir — tarih girilmemiş tek-dönem
+// senaryosunda (bkz. hesapla()'daki "30 gün varsayımı YOK" kararı)
+// güvenilir bir günlük ortalama yok, bu yüzden null döner (sessizce
+// gösterilmez, tahmin yürütülmez — K78'deki "yuvarlama yasağı"yla aynı
+// dürüstlük ilkesi).
+function skttDurumuHesapla(sektorTaban, tuketim, gunSayisi){
+  var limit = SKTT_LIMITLERI_YILLIK[sektorTaban];
+  if(limit === undefined || !gunSayisi || gunSayisi <= 0) return null;
+  var gunlukOrtalama = tuketim / gunSayisi;
+  var yillikProjeksiyon = gunlukOrtalama * 365;
+  return {
+    kategori: SKTT_KATEGORI_GORUNEN_AD[sektorTaban] || sektorTaban,
+    limit: limit,
+    projeksiyon: Math.round(yillikProjeksiyon),
+    asimRiski: yillikProjeksiyon > limit,
+  };
+}
+
 function taban2Bul(abone){
   var p = aboneParcala(abone);
   if(!p.gerilim) return abone; // özel durum (Üretici, İletim, Genel Aydınlatma) — ayrım yapılmadan olduğu gibi kalır
@@ -531,11 +601,13 @@ function aboneGuncelle(){
   document.getElementById("wrapGuc").classList.toggle("hidden", !bilgi.terimler.includes("ÇT"));
 }
 
-function fmt(sayi, basamak){
-  if(sayi===null||sayi===undefined||isNaN(sayi)) return "-";
-  return sayi.toLocaleString("tr-TR",{minimumFractionDigits:basamak,maximumFractionDigits:basamak});
-}
-
+// DÜZELTME (08.08.2026, Claude denetiminde bulundu): Burada İKİNCİ bir
+// fmt() tanımı vardı (sabit "tr-TR", dil kontrolü yok) — JS hoisting
+// kuralı gereği bu, 432. satırdaki DOĞRU (dile-duyarlı: AppState.dil
+// "en" ise "en-US" locale kullanan) tanımı SESSİZCE eziyordu. Sonuç:
+// İngilizce dil modu açıldığında sayı formatı hep Türkçe kalırdı.
+// Tekrar eden, hatalı tanım kaldırıldı — artık tek fmt() var (432),
+// dile-duyarlı.
 function tarifeBul(abone, bedel, donem){
   var kayit = tarifeData.find(d => d.abone===abone && d.bedel===bedel);
   if(!kayit) return null;
@@ -936,6 +1008,30 @@ function hesapla(){
 
   // Serbest piyasa
   document.getElementById("degerTarife").textContent = fmt(enUcuz.sonuc.toplam_tl,2)+" TL";
+
+  // SKTT Limit Sayacı (08.08.2026) — yalnızca gerçek okuma tarihleri
+  // girilmişse (gunSayisi biliniyorsa) VE seçili kategori 4 bilinen
+  // SKTT sınıfından biriyse gösterilir; aksi halde kutu gizli kalır.
+  var skttKutu = document.getElementById("kutuSktt");
+  var skttDurum = skttDurumuHesapla(bilgi.sektorTaban, tuketim, gunSayisi);
+  if(skttDurum){
+    skttKutu.style.display = "block";
+    var degerSktt = document.getElementById("degerSktt");
+    var aciklamaSktt = document.getElementById("aciklamaSktt");
+    var projFmt = fmt(skttDurum.projeksiyon, 0);
+    var limitFmt = fmt(skttDurum.limit, 0);
+    if(skttDurum.asimRiski){
+      degerSktt.textContent = _cvr("skttAsimRiski");
+      degerSktt.className = "fark-deger dezavantaj";
+      aciklamaSktt.textContent = _cvr("skttAsimAciklama", skttDurum.kategori, projFmt, limitFmt);
+    } else {
+      degerSktt.textContent = _cvr("skttLimitAltinda");
+      degerSktt.className = "fark-deger avantaj";
+      aciklamaSktt.textContent = _cvr("skttAciklama", skttDurum.kategori, projFmt, limitFmt);
+    }
+  } else {
+    skttKutu.style.display = "none";
+  }
 
   document.getElementById("sonuclar").classList.remove("hidden");
   document.getElementById("sonuclar").scrollIntoView({behavior:"smooth"});
