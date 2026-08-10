@@ -63,9 +63,42 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
 .dil-btn:hover{color:var(--txt);}
 .dil-btn.active{background:var(--acc);color:#fff;}
 .dil-btn:not(:last-child){border-right:1px solid var(--brd);}
+.sadece-yazdir{display:none}
+
+/* PRINT / PDF ÇIKTISI (08.08.2026, Faz 2 madde 3 — G'nin de önerdiği
+   "@media print, sıfır kütüphare bağımlılığı" yaklaşımı). Kullanıcı
+   tarayıcının kendi Yazdır (Ctrl+P) diyaloğunda "PDF olarak kaydet"
+   seçtiğinde devreye girer — hiçbir ek kütüphane/sunucu gerekmiyor,
+   mevcut tek-dosya-offline mimariyle tam uyumlu. Koyu tema kağıda
+   yazdırılmaya uygun değil (mürekkep israfı + okunaksız) — bu yüzden
+   print modunda TÜM renkler açık temaya (siyah yazı, beyaz zemin)
+   bilerek çevriliyor; ekran teması hiç değişmiyor. */
+@media print {
+  body{background:#fff;color:#111;padding:0;font-size:11px;}
+  #girisFormu, .btn, .dil-degistirici, .uyari a{display:none !important;}
+  .sadece-yazdir{display:block;margin-bottom:16px;border-bottom:2px solid #111;padding-bottom:10px;}
+  .kart{background:#fff;border:1px solid #ccc;box-shadow:none;page-break-inside:avoid;margin-bottom:12px;}
+  .kart-baslik{color:#111;}
+  .fark-kutu.avantaj{background:#f0fdf4;border-color:#86efac;}
+  .fark-kutu.dezavantaj{background:#fef2f2;border-color:#fca5a5;}
+  .fark-deger.avantaj{color:#15803d;}
+  .fark-deger.dezavantaj{color:#b91c1c;}
+  .sonuc-tablo td{color:#111;}
+  .sonuc-tablo td:last-child{color:#111;}
+  .sonuc-tablo tr.toplam{background:#f3f4f6;}
+  .sonuc-tablo tr.toplam td:last-child{color:#111;}
+  .footer{background:#fff;border-color:#ccc;color:#555;}
+  a{color:#111 !important;text-decoration:none;}
+}
 </style>
 </head>
+<!-- Yalnızca yazdırma/PDF çıktısında görünür, ekranda gizli — kurumsal
+     antet (G'nin "resmi logolu antet" önerisi, kütüphanesiz sürümü). -->
 <body>
+<div class="sadece-yazdir">
+  <strong style="font-size:16px;">Tarife &amp; Piyasa Veri Platformu — Fatura Modelleyici Raporu</strong><br>
+  <span style="font-size:11px;color:#555;">Rapor tarihi: 10.08.2026 · ozkanmz.github.io/tarife-platform · Bu, EPDK/EPİAŞ açık verilerine dayanan bağımsız bir simülasyon aracıdır, resmi bir belge değildir.</span>
+</div>
 
 <div style="max-width:960px;margin:0 auto">
 
@@ -99,7 +132,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
 </p>
 
 <!-- GİRİŞ FORMU -->
-<div class="kart">
+<div class="kart" id="girisFormu">
   <div class="kart-baslik">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
     <span data-i18n="tuketimBilgileri">Tüketim Bilgileri</span>
@@ -164,6 +197,9 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
 
 <!-- SONUÇLAR -->
 <div id="sonuclar" class="hidden">
+  <button class="btn" style="width:auto;padding:8px 18px;font-size:12px;margin-bottom:16px;background:var(--sur2);color:var(--txt);border:1px solid var(--brd);" onclick="window.print()">
+    <span data-i18n="raporuYazdir">🖨 Raporu Yazdır / PDF Olarak Kaydet</span>
+  </button>
   <!-- Tarife Faturası/ları (1-4 kart, JS ile üretilir) -->
   <div class="tarife-grid" id="tarifeKartlari"></div>
 
@@ -208,7 +244,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   <span data-i18n="footerP1">Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.</span><br>
-  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 09.08.2026
+  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 10.08.2026
 </div>
 
 </div><!-- /max-width -->
@@ -254,6 +290,7 @@ tr: {
   kaynakSktt1: "EPDK — SKTT Sıkça Sorulan Sorular", kaynakSktt2: "EPDK — Son Kaynak Tedarik Tarifesi", kaynakTeblig: "mevzuat.gov.tr — Tebliğ metni (30307 sayılı R.G.)",
   ozet: "Özet", enUcuzTarifeSecenegi: "En Ucuz Tarife Seçeneği",
   skttDurumBaslik: "SKTT Limit Durumu (yıllıklaştırılmış projeksiyon)",
+  raporuYazdir: "🖨 Raporu Yazdır / PDF Olarak Kaydet",
   skttLimitAltinda: "Limit altında",
   skttAsimRiski: "⚠ AŞIM RİSKİ",
   skttAciklama: function(kategori, projeksiyon, limit){ return "Bu tüketim hızıyla devam ederseniz, yıllık tüketiminiz yaklaşık " + projeksiyon + " kWh olur (" + kategori + " limiti: " + limit + " kWh). Bu bir TAHMİNDİR, sadece girdiğiniz dönemin günlük ortalamasından yıla uzatılmıştır — gerçek yıllık tüketiminiz mevsimsel farklarla değişebilir."; },
@@ -316,6 +353,7 @@ en: {
   kaynakSktt1: "EPDK — SKTT Frequently Asked Questions", kaynakSktt2: "EPDK — End Source Supply Tariff", kaynakTeblig: "mevzuat.gov.tr — Communiqué text (Official Gazette No. 30307)",
   ozet: "Summary", enUcuzTarifeSecenegi: "Cheapest Tariff Option",
   skttDurumBaslik: "SKTT Limit Status (annualized projection)",
+  raporuYazdir: "🖨 Print Report / Save as PDF",
   skttLimitAltinda: "Below limit",
   skttAsimRiski: "⚠ RISK OF EXCEEDING LIMIT",
   skttAciklama: function(kategori, projeksiyon, limit){ return "At this rate of consumption, your annual consumption would be approximately " + projeksiyon + " kWh (" + kategori + " limit: " + limit + " kWh). This is an ESTIMATE ONLY, projected from your entered period's daily average — actual annual consumption may vary with seasonal differences."; },
