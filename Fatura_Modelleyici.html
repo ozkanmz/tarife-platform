@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- CSP (08.08.2026, Faz 2 madde 2, Seçenek A — panel_template.html'deki
+     AYNI gerekçe ve karar, tutarlılık için buraya da uygulandı). Ana
+     panelden TEK farkı: burada Chart.js/CDN hiç kullanılmadığı için
+     https://cdn.jsdelivr.net script-src'ye eklenmedi (en az yetki
+     ilkesi — gerçekten kullanılmayan bir izin verilmez). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Fatura Modelleyici</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <style>
