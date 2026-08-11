@@ -1,3 +1,19 @@
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  UYARI: BU BİR ŞABLON DOSYASIDIR — DOĞRUDAN AÇMAYIN / KULLANMAYIN.
+  İçindeki yer tutucular (FATURA_CSS, GUNCEL_TARIH gibi isimler,
+  çift süslü parantez içinde geçer) sadece fatura_modelleyici_uret.py
+  çalıştırıldığında gerçek veriyle doldurulur.
+
+  GERÇEK, ÇALIŞAN FATURA MODELLEYİCİ HER ZAMAN ŞURADADIR:
+  Ciktilar\Fatura_Modelleyici.html
+
+  Bu dosyayı (fatura_template.html) doğrudan bir tarayıcıya sürüklerseniz
+  veya bir HTML önizleyicisine yapıştırırsanız doldurulmamış yer tutucular
+  görürsünüz — bu normaldir, dosya bozuk değildir, sadece
+  yanlış dosya açılmıştır.
+  ═══════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -11,7 +27,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Fatura Modelleyici</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
-<style>
+<style>/* Enerji-Portali — Fatura Modelleyici Stilleri (M8-Kademe2) */
 :root{
   --bg:#0f1117;--sur:#181c27;--sur2:#1e2233;--brd:#2a2f42;
   --acc:#3b82f6;--grn:#22c55e;--red:#ef4444;--yel:#f59e0b;
@@ -97,7 +113,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
 <body>
 <div class="sadece-yazdir">
   <strong style="font-size:16px;">Tarife &amp; Piyasa Veri Platformu — Fatura Modelleyici Raporu</strong><br>
-  <span style="font-size:11px;color:#555;">Rapor tarihi: 10.08.2026 · ozkanmz.github.io/tarife-platform · Bu, EPDK/EPİAŞ açık verilerine dayanan bağımsız bir simülasyon aracıdır, resmi bir belge değildir.</span>
+  <span style="font-size:11px;color:#555;">Rapor tarihi: 11.08.2026 · ozkanmz.github.io/tarife-platform · Bu, EPDK/EPİAŞ açık verilerine dayanan bağımsız bir simülasyon aracıdır, resmi bir belge değildir.</span>
 </div>
 
 <div style="max-width:960px;margin:0 auto">
@@ -244,7 +260,7 @@ select:focus,input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(59,13
   <span data-i18n="footerP1">Bu araç EPDK tarife verilerinden üretilmiştir. Hesaplanan tutar tahminidir; güç aşımı, reaktif ceza,
   gecikmeli ödemeler ve tedarikçiye özgü ek kalemler dahil değildir. Resmi fatura bilgisi için
   ilgili dağıtım veya tedarik şirketine başvurun.</span><br>
-  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 10.08.2026
+  <span data-i18n="footerVeriKaynagi">Veri kaynağı: EPDK (epdk.gov.tr)</span> · OzkanMZ · <span data-i18n="sonGuncelleme">Son güncelleme:</span> 11.08.2026
 </div>
 
 </div><!-- /max-width -->
