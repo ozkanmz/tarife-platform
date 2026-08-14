@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metodoloji — Tarife &amp; Piyasa Veri Platformu</title>
+<meta name="description" content="Tarife &amp; Piyasa Veri Platformu'nun veri kaynakları, hesaplama yöntemi ve kapsam/sınırlamaları hakkında açık metodoloji sayfası.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root{--bg:#0f1117;--sur:#181c27;--sur2:#1e2233;--brd:#2a2f42;--acc:#3b82f6;--acc-light:#1e3a5f;--grn:#22c55e;--warn:#f59e0b;--txt:#e2e8f0;--mut:#94a3b8;--font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+--fs-sm:12px;--fs-base:13px;--fs-md:14px;--fs-lg:16px;--fs-xl:19px;--fs-2xl:26px;
+--sp-8:8px;--sp-12:12px;--sp-16:16px;--sp-20:20px;--sp-24:24px;--sp-32:32px;--sp-48:48px;
+--r-sm:4px;--r-md:6px;--r-lg:8px;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);line-height:1.65;}
+.wrap{max-width:720px;margin:0 auto;padding:var(--sp-48) var(--sp-20) var(--sp-32);}
+header{display:flex;align-items:center;gap:var(--sp-12);margin-bottom:var(--sp-32);padding-bottom:var(--sp-20);border-bottom:1px solid var(--brd);}
+.logo{flex-shrink:0;}
+.baslik-grup{display:flex;flex-direction:column;}
+.eyebrow{font-size:var(--fs-sm);color:var(--acc);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;}
+h1{font-size:var(--fs-2xl);font-weight:700;}
+h2{font-size:var(--fs-lg);font-weight:600;color:var(--txt);margin:var(--sp-32) 0 var(--sp-12);padding-top:var(--sp-8);border-top:1px solid var(--brd);}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:var(--sp-24);}
+p{font-size:var(--fs-base);color:var(--mut);margin-bottom:var(--sp-12);}
+p strong{color:var(--txt);font-weight:600;}
+ul{margin:0 0 var(--sp-12) var(--sp-20);color:var(--mut);font-size:var(--fs-base);}
+li{margin-bottom:var(--sp-8);}
+li strong{color:var(--txt);font-weight:600;}
+.kart{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r-lg);padding:var(--sp-16) var(--sp-20);margin-bottom:var(--sp-16);}
+.durum-ornek{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-family:var(--mono);background:var(--sur2);border:1px solid var(--brd);padding:4px 10px;border-radius:var(--r-sm);margin-right:var(--sp-8);margin-bottom:var(--sp-8);}
+.nokta{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.nokta.ok{background:var(--grn);} .nokta.uyari{background:var(--warn);}
+a{color:var(--acc);}
+.geri-btn{display:inline-flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--brd);color:var(--txt);text-decoration:none;padding:10px 18px;border-radius:var(--r-md);font-size:var(--fs-base);font-weight:500;transition:border-color .15s;margin-top:var(--sp-24);}
+.geri-btn:hover{border-color:var(--acc);}
+footer{margin-top:var(--sp-48);padding-top:var(--sp-20);border-top:1px solid var(--brd);font-size:var(--fs-sm);color:var(--mut);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <svg class="logo" width="40" height="40" viewBox="0 0 240 240">
+    <path d="M 201.0 107.9 Q 208.0 120.0 201.0 132.1 L 171.0 184.1 Q 164.0 196.2 150.0 196.2 L 90.0 196.2 Q 76.0 196.2 69.0 184.1 L 39.0 132.1 Q 32.0 120.0 39.0 107.9 L 69.0 55.9 Q 76.0 43.8 90.0 43.8 L 150.0 43.8 Q 164.0 43.8 171.0 55.9 Z" fill="#111e3d"/>
+    <path d="M 201.0 107.9 Q 208.0 120.0 201.0 132.1 L 171.0 184.1 Q 164.0 196.2 150.0 196.2 L 90.0 196.2 Q 76.0 196.2 69.0 184.1 L 39.0 132.1 Q 32.0 120.0 39.0 107.9 L 69.0 55.9 Q 76.0 43.8 90.0 43.8 L 150.0 43.8 Q 164.0 43.8 171.0 55.9 Z" fill="none" stroke="#b8934a" stroke-width="3"/>
+    <polygon points="148,58 96,112 124,120 88,190 170,112 138,102" fill="#e8dcc4"/>
+  </svg>
+  <div class="baslik-grup">
+    <span class="eyebrow">Tarife &amp; Piyasa Veri Platformu</span>
+    <h1>Metodoloji</h1>
+  </div>
+</header>
+
+<p>Bu sayfa, platformdaki verilerin nereden geldiğini, nasıl hesaplandığını ve neyi kapsamadığını açıklar — panelin kendisinde de aynı bilgiler kısa özet olarak yer alır, burada ayrıntılı ve linklenebilir hâliyle bulunur.</p>
+
+<h2>Veri kaynakları</h2>
+<p>Tüm veriler, EPDK (epdk.gov.tr) ve EPİAŞ Şeffaflık Platformu'nda (seffaflik.epias.com.tr) kamuya açık olarak yayımlanan tarife, YEKDEM ve PTF kayıtlarından, kişisel/eğitim amaçlı olarak derlenmiştir. EPİAŞ Şeffaflık Platformu'nun kendi bildirimi uyarınca, sunulan içerik ve veriler bilgilendirme amaçlıdır ve kaynak gösterilmek suretiyle çoğaltılabilir/kullanılabilir; söz konusu verilerden doğabilecek kayıp ve zararlardan Enerji Piyasaları İşletme A.Ş. sorumluluk kabul etmez.</p>
+
+<h2>Hesaplama yöntemi</h2>
+<p>Gerçek elektrik enerjisi maliyeti PTF (Piyasa Takas Fiyatı) ile YEKDEM (Yenilenebilir Enerji Kaynakları Destekleme Mekanizması) bedelinin toplamıdır. Platform bu iki bileşeni ayrı ayrı gösterir; tedarik kararları için ikisinin birlikte değerlendirilmesi önerilir.</p>
+<ul>
+<li><strong>Serbest piyasa maliyeti</strong> = (Aylık ortalama PTF + EPİAŞ kesinleşmiş YEKDEM) / 1000 → TL/kWh.</li>
+<li><strong>Başabaş Oranı</strong>, ulusal tarifenin bu ham piyasa maliyetinin (KBK/tedarikçi marjı hariç) yüzde kaçı üzerinde olduğunu gösterir — KBK oranları otomatik olarak fiyata eklenmez, panel "ham" bir karşılaştırma sunar.</li>
+<li><strong>PTF ortalamaları</strong> basit aritmetik ortalamadır, tüketim ağırlıklı değildir.</li>
+<li>Tarife karşılaştırmaları, kademe sınırı değişen abone gruplarında en yakın geçmiş etikete göre eşleştirilir.</li>
+</ul>
+
+<h2>Kesinleşen vs. öngörülen veri</h2>
+<p>YEKDEM tabloları her (yıl, ay) için en son Karar Tarihli kaydı gösterir. EPİAŞ'ın kesinleşmiş YEKDEM verisi henüz yoksa, EPDK'nın kurul kararlarındaki <strong>"öngörülen"</strong> maliyete düşülür (negatifse 0 kabul edilir — EPDK YEKDEM negatif çıktığında yüksek tüketimli serbest tüketiciler için EPDK kararı gereği 0 TL/MWh uygulanır, buradaki negatif değerler ham karar metinlerindeki öngörülerdir). Öngörü değerleri panelde soluk renkte ve "(öngörülen)" etiketiyle gösterilir; hücre üzerine gelindiğinde ilgili Karar No ve Karar Tarihi görüntülenir.</p>
+<p>Bir ay için daha sonra revize bir öngörü/kesinleşme yayınlanmadıysa, o aya ait ilk (eski) değer geçerliliğini korur — bazı hücrelerin "olağandışı" görünmesinin nedeni budur, veri hatası değildir.</p>
+<p><strong>Önemli:</strong> panel genelindeki özet KPI kartları ve "Serbest Avantajlı Ay" oranı YALNIZCA kesinleşen aylardan hesaplanır — büyük puntolu özet rakamlar, ileride revize edilebilecek öngörü verisine dayanmaz.</p>
+
+<h2>Veri sağlığı rozeti</h2>
+<p>Panelin üst kısmındaki rozet, üretim sırasında çalışan otomatik kalite kontrollerinin sonucunu gösterir — eksik gün sayısı, olağandışı fiyat sapmaları, negatif fiyat kayıtları gibi kontroller dahildir. Üç durum vardır:</p>
+<div class="kart">
+<span class="durum-ornek"><span class="nokta ok"></span> Sorun yok</span>
+<span class="durum-ornek"><span class="nokta uyari"></span> Uyarı</span>
+<span class="durum-ornek" style="border-color:#ef4444;color:#ef4444;"><span class="nokta" style="background:#ef4444;"></span> Dikkat</span>
+<p style="margin:var(--sp-8) 0 0;">Rozetin üzerine gelindiğinde tespit edilen kontrollerin ayrıntısı görüntülenir. Bu, verinin kesinleşmiş mi öngörülen mi olduğunu değil, üretim zincirinin teknik olarak sorunsuz çalışıp çalışmadığını gösterir — iki bilgi birbirinden bağımsızdır, bkz. yukarıdaki "Kesinleşen vs. öngörülen veri" bölümü.</p>
+</div>
+
+<h2>Kapsam ve sınırlamalar</h2>
+<ul>
+<li>PTF ortalamaları tüketim ağırlıklı değildir; profil, dengesizlik ve tedarikçi kâr marjı maliyetleri kapsam dışıdır.</li>
+<li>KBK (Kaynak Katkı Bedeli) oranları serbest piyasa fiyatına otomatik eklenmez.</li>
+<li>Güç aşımı, reaktif ceza ve tedarikçiye özgü ek kalemler dahil değildir.</li>
+<li>Panel, resmi bir EPDK veya EPİAŞ yayını değildir; doğruluğu garanti edilmez, yatırım veya ticari karar amacıyla kullanılmamalıdır.</li>
+</ul>
+
+<a class="geri-btn" id="geriLink" href="Tarife_Piyasa_Veri_Platformu.html">← Panele Dön</a>
+
+<footer>
+Tarife &amp; Piyasa Veri Platformu, bağımsız bir bilgilendirme çalışmasıdır; EPDK, EPİAŞ veya başka bir resmî kurumla ilişkisi yoktur.
+</footer>
+
+</div>
+<script>
+// K74 ile AYNI desen (fatura_logic.js'teki "Ana Sayfaya Dön" linki):
+// offline açılışta ana panel Tarife_Piyasa_Veri_Platformu.html adını
+// taşır, canlı sitede github_yayinla.py/web_yayinla_ayrik.py onu
+// index.html olarak kopyalar — location.protocol ile doğru ad seçilir.
+(function(){
+  var link = document.getElementById("geriLink");
+  if (link) link.href = (location.protocol === "file:") ? "Tarife_Piyasa_Veri_Platformu.html" : "index.html";
+})();
+</script>
+</body>
+</html>
