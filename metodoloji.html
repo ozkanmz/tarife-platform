@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Metodoloji — Tarife &amp; Piyasa Veri Platformu</title>
 <meta name="description" content="Tarife &amp; Piyasa Veri Platformu'nun veri kaynakları, hesaplama yöntemi ve kapsam/sınırlamaları hakkında açık metodoloji sayfası.">
+<!-- HTML head/footer eşitleme (bkz. KARARLAR.md K183): CSP, fatura_template.html
+     ile AYNI gerekçeyle eklendi — bu sayfada da Chart.js/CDN yok, bu yüzden
+     https://cdn.jsdelivr.net script-src'ye eklenmedi (en az yetki ilkesi). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cpath d='M 201.0 107.9 Q 208.0 120.0 201.0 132.1 L 171.0 184.1 Q 164.0 196.2 150.0 196.2 L 90.0 196.2 Q 76.0 196.2 69.0 184.1 L 39.0 132.1 Q 32.0 120.0 39.0 107.9 L 69.0 55.9 Q 76.0 43.8 90.0 43.8 L 150.0 43.8 Q 164.0 43.8 171.0 55.9 Z' fill='%23111e3d'/%3E%3Cpath d='M 201.0 107.9 Q 208.0 120.0 201.0 132.1 L 171.0 184.1 Q 164.0 196.2 150.0 196.2 L 90.0 196.2 Q 76.0 196.2 69.0 184.1 L 39.0 132.1 Q 32.0 120.0 39.0 107.9 L 69.0 55.9 Q 76.0 43.8 90.0 43.8 L 150.0 43.8 Q 164.0 43.8 171.0 55.9 Z' fill='none' stroke='%23b8934a' stroke-width='3'/%3E%3Cpolygon points='148,58 96,112 124,120 88,190 170,112 138,102' fill='%23e8dcc4'/%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono&display=swap');
 :root{--bg:#0f1117;--sur:#181c27;--sur2:#1e2233;--brd:#2a2f42;--acc:#3b82f6;--acc-light:#1e3a5f;--grn:#22c55e;--warn:#f59e0b;--txt:#e2e8f0;--mut:#94a3b8;--font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;

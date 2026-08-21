@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-:root{--bg:#0f1117;--sur:#181c27;--sur2:#1e2233;--brd:#2a2f42;--acc:#3b82f6;--acc-light:#1e3a5f;--grn:#22c55e;--red:#ef4444;--txt:#e2e8f0;--mut:#94a3b8;--font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+/* Ortak temel token'lar (--bg/--sur/--sur2/--brd/--acc/--grn/--red/--txt/
+   --mut/--font/--mono) artık ortak_tasarim_tokenlari.css'te TEK yerden
+   yönetiliyor (bkz. KARARLAR.md K182) — build script (birlesik_panel_uret.py)
+   o dosyanın içeriğini bu dosyadan HEMEN ÖNCE ekliyor. Burada sadece bu
+   sayfaya ÖZGÜ olan --acc-light kaldı. */
+:root{--acc-light:#1e3a5f;
 /* Tip ölçeği — 11 farklı, birbirinden göz ile ayırt edilemeyecek kadar
    yakın font-size değeri (örn. 11px/11.5px/12px/12.5px) yerine, aralarında
    anlamlı fark olan 8 sabit basamak. Yeni bir bileşen eklerken bu
