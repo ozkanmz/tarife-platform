@@ -1,3 +1,27 @@
+
+/* ortak_tasarim_tokenlari.css — Panel ve Fatura Modelleyici arasında ORTAK
+   olan temel tasarım token'ları (:root değişkenleri) için TEK kaynak.
+
+   Kod tekrarı konsolidasyonu (bkz. KARARLAR.md K182): bu 11 değişken
+   önceden hem panel_styles.css'in hem fatura_styles.css'in kendi :root
+   bloklarında BİREBİR AYNI değerlerle iki kez elle yazılıydı — biri
+   güncellenip diğeri unutulursa (ör. bir renk kodu değişse) iki sayfa
+   sessizce birbirinden farklı görünmeye başlayabilirdi.
+
+   NASIL ÇALIŞIYOR: birlesik_panel_uret.py ve fatura_modelleyici_uret.py,
+   kendi panel_styles.css/fatura_styles.css içeriklerini okumadan HEMEN
+   ÖNCE bu dosyanın içeriğini okuyup HTML çıktısına ekliyor. CSS'te aynı
+   :root seçicisi birden fazla kez tanımlanabilir ve tüm bildirimler
+   BİRİKİMLİ olarak uygulanır (çakışan bir özellik adı yoksa sıralamanın
+   önemi yoktur) — bu yüzden bu bölünme, tarayıcıda görünen sonucu
+   DEĞİŞTİRMEZ. Doğrulaması: dogrulama_calistir.py / KARARLAR.md K182'de
+   açıklanan token-seti karşılaştırma testi.
+
+   YENİ bir token eklerken: gerçekten HER İKİ sayfada da kullanılacaksa
+   buraya ekleyin; sadece birinde kullanılacaksa ilgili sayfanın kendi
+   panel_styles.css/fatura_styles.css dosyasına ekleyin (ör. --acc-light
+   sadece panelde kullanıldığı için panel_styles.css'te kaldı). */
+:root{--bg:#0f1117;--sur:#181c27;--sur2:#1e2233;--brd:#2a2f42;--acc:#3b82f6;--grn:#22c55e;--red:#ef4444;--txt:#e2e8f0;--mut:#94a3b8;--font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;}
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 /* Ortak temel token'lar (--bg/--sur/--sur2/--brd/--acc/--grn/--red/--txt/
    --mut/--font/--mono) artık ortak_tasarim_tokenlari.css'te TEK yerden
